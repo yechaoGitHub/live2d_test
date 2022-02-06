@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="D3D12Manager">
+      <UniqueIdentifier>{199abcdf-b4e0-49f6-879c-77df93db1a3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="D3D12Renderer">
+      <UniqueIdentifier>{4f95deaa-b9f1-4e6e-bdeb-9629e4ccb800}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="main">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D3D12Manager.cpp">
+      <Filter>D3D12Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer.cpp">
+      <Filter>D3D12Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DUtil.cpp">
+      <Filter>D3D12Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>main</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D3D12Manager.h">
+      <Filter>D3D12Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer.h">
+      <Filter>D3D12Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DUtil.h">
+      <Filter>D3D12Manager</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
