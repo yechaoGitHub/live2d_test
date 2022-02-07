@@ -21,13 +21,17 @@
   <ItemGroup>
     <ClCompile Include="D3D12Manager.cpp" />
     <ClCompile Include="D3D12Renderer.cpp" />
+    <ClCompile Include="D3DCamera.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MathHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12Manager.h" />
     <ClInclude Include="D3D12Renderer.h" />
+    <ClInclude Include="D3DCamera.h" />
     <ClInclude Include="D3DUtil.h" />
+    <ClInclude Include="MathHelper.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

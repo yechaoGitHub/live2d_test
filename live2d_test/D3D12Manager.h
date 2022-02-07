@@ -60,6 +60,8 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12Resource> CreateDepthStencilBuffer(int width, int height, DXGI_FORMAT format, float clear_depth, uint8_t clear_stencil);
 
+        static Microsoft::WRL::ComPtr<ID3D12Resource> CreateBuffer(D3D12_HEAP_TYPE type, uint64_t byte_size);
+
     private:
         static D3D12Manager D3D12_MANAGER_INSTANCE_;
 

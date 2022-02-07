@@ -25,6 +25,12 @@
     <ClCompile Include="main.cpp">
       <Filter>main</Filter>
     </ClCompile>
+    <ClCompile Include="D3DCamera.cpp">
+      <Filter>D3D12Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="MathHelper.cpp">
+      <Filter>D3D12Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12Manager.h">
@@ -35,6 +41,12 @@
     </ClInclude>
     <ClInclude Include="D3DUtil.h">
       <Filter>D3D12Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DCamera.h">
+      <Filter>D3D12Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="MathHelper.h">
+      <Filter>D3D12Renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -5,11 +5,50 @@
 #include "D3DUtil.h"
 #include "DirectXTK/DescriptorHeap.h"
 
-#include <vector>
-
-
 namespace D3D
 {
+    using namespace DirectX;
+
+    const std::array<D3D12Renderer::Vertex, 8>  D3D12Renderer::VERTICE_DATA_ = 
+    {
+            Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
+            Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
+            Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
+            Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
+            Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
+            Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
+            Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
+            Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
+    };
+
+    const std::array<std::uint16_t, 36> D3D12Renderer::INDICE_DATA_ = 
+    {
+        // front face
+        0, 1, 2,
+        0, 2, 3,
+
+        // back face
+        4, 6, 5,
+        4, 7, 6,
+
+        // left face
+        4, 5, 1,
+        4, 1, 0,
+
+        // right face
+        3, 2, 6,
+        3, 6, 7,
+
+        // top face
+        1, 5, 6,
+        1, 6, 2,
+
+        // bottom face
+        4, 0, 3,
+        4, 3, 7
+    };
+
+
     D3D12Renderer::D3D12Renderer(HWND hwnd, int width, int height) :
         window_handle_(hwnd),
         client_width_(width),
@@ -24,8 +63,8 @@ namespace D3D
     void D3D12Renderer::Initialize()
     {
         command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_FLAG_NONE);
-        direct_cmd_list_alloc_ = D3D12Manager::CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT);
-        command_list_ = D3D12Manager::CreateCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, direct_cmd_list_alloc_.Get());
+        command_list_alloc_ = D3D12Manager::CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT);
+        command_list_ = D3D12Manager::CreateCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, command_list_alloc_.Get());
         swap_chain_ = D3D12Manager::CreateSwapChain(
             window_handle_, 
             command_queue_.Get(), 
@@ -94,12 +133,14 @@ namespace D3D
         screen_viewport_.MaxDepth = 1.0f;
 
         scissor_rect_ = { 0, 0, client_width_, client_height_ };
+
+        InitVertexIndexBuffer();
     }
 
     void D3D12Renderer::Render()
     {
-        ThrowIfFailed(direct_cmd_list_alloc_->Reset());
-        ThrowIfFailed(command_list_->Reset(direct_cmd_list_alloc_.Get(), pipe_line_state_.Get()));
+        ThrowIfFailed(command_list_alloc_->Reset());
+        ThrowIfFailed(command_list_->Reset(command_list_alloc_.Get(), pipe_line_state_.Get()));
 
         int back_index = GetCurrentRenderTargetIndex();
         auto cur_back_buffer = back_target_buffer_[back_index];
@@ -155,6 +196,60 @@ namespace D3D
             WaitForSingleObject(eventHandle, INFINITE);
             CloseHandle(eventHandle);
         }
+    }
+
+    void D3D12Renderer::InitVertexIndexBuffer()
+    {
+        uint64_t vertices_size = VERTICE_DATA_.size() * sizeof(Vertex);
+        uint64_t indices_size = INDICE_DATA_.size() * sizeof(uint16_t);
+
+        uint64_t upload_buffer_length = (std::max)(vertices_size, indices_size) * 1.5;
+
+        upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, upload_buffer_length);
+        vertex_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_DEFAULT, vertices_size);
+        index_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_DEFAULT, indices_size);
+
+        D3D12_SUBRESOURCE_DATA subResourceData = {};
+        subResourceData.pData = VERTICE_DATA_.data();
+        subResourceData.RowPitch = vertices_size;
+        subResourceData.SlicePitch = subResourceData.RowPitch;
+
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout{};
+        uint32_t num_rows{};
+        uint64_t row_size_in_byte{};
+        uint64_t required_size{};
+        auto buffer_desc = vertex_buffer_->GetDesc();
+        D3D12Manager::GetDevice()->GetCopyableFootprints(&buffer_desc, 0, 1, 0, &layout, &num_rows, &row_size_in_byte, &required_size);
+        
+        void* upload_map_data{};
+        upload_buffer_->Map(0, nullptr, &upload_map_data);
+        ::memcpy(upload_map_data, VERTICE_DATA_.data(), vertices_size);
+
+        command_list_alloc_->Reset();
+        command_list_->Reset(command_list_alloc_.Get(), nullptr);
+
+        D3D12_RESOURCE_BARRIER resource_barrier{};
+        resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        resource_barrier.Transition.pResource = vertex_buffer_.Get();
+        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+        command_list_->ResourceBarrier(1, &resource_barrier);
+        command_list_->CopyBufferRegion(vertex_buffer_.Get(), 0, upload_buffer_.Get(), 0, vertices_size);
+
+        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+        command_list_->ResourceBarrier(1, &resource_barrier);
+
+        ThrowIfFailed(command_list_->Close());
+
+        ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
+        command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+        FlushCommandQueue();
+
     }
 };
 

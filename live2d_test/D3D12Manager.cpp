@@ -301,6 +301,53 @@ namespace D3D
         return depth_stencil_buffer;
     }
 
+    Microsoft::WRL::ComPtr<ID3D12Resource> D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE type, uint64_t byte_size)
+    {
+        D3D12_HEAP_PROPERTIES heap_properties{};
+        heap_properties.Type = type;
+        heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        heap_properties.CreationNodeMask = 1;
+        heap_properties.VisibleNodeMask = 1;
+
+        D3D12_RESOURCE_DESC resource_desc{};
+        resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        resource_desc.Alignment = 0;
+        resource_desc.Width = byte_size;
+        resource_desc.Height = 1;
+        resource_desc.DepthOrArraySize = 1;
+        resource_desc.MipLevels = 1;
+        resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+        resource_desc.SampleDesc.Count = 1;
+        resource_desc.SampleDesc.Quality = 0;
+        resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        resource_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+        D3D12_RESOURCE_STATES init_state{};
+        switch (type)
+        {
+            case D3D12_HEAP_TYPE_DEFAULT:
+                init_state = D3D12_RESOURCE_STATE_COMMON;
+            break;
+
+            case D3D12_HEAP_TYPE_UPLOAD:
+                init_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+            break;
+
+            case D3D12_HEAP_TYPE_READBACK:
+                init_state = D3D12_RESOURCE_STATE_COPY_DEST;
+            break;
+
+            default:
+                init_state = D3D12_RESOURCE_STATE_COMMON;
+            break;
+        }
+
+        ComPtr<ID3D12Resource> buffer;
+        ThrowIfFailed(GetDevice()->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE, &resource_desc, init_state, nullptr, IID_PPV_ARGS(&buffer)));
+        return buffer;
+    }
+
     D3D12_RASTERIZER_DESC D3D12Manager::DefaultRasterizerDesc()
     {
         static D3D12_RASTERIZER_DESC desc = 
