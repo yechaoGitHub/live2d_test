@@ -2,6 +2,7 @@
 
 #include "D3D12Manager.h"
 #include "D3DCamera.h"
+#include "MathHelper.h"
 
 #include <vector>
 #include <array>
@@ -16,12 +17,19 @@ namespace D3D
             DirectX::XMFLOAT4 Color;
         };
 
+        struct ObjectConstants
+        {
+            DirectX::XMFLOAT4X4 world_view_proj = MathHelper::Identity4x4();
+        };
+
     public:
         D3D12Renderer(HWND hwnd, int width, int height);
         ~D3D12Renderer();
 
-        void Initialize();
+        float AspectRatio() const;
 
+        void Initialize();
+        void Update();
         void Render();
 
     private:
@@ -51,6 +59,8 @@ namespace D3D
         D3D12_INDEX_BUFFER_VIEW                             index_buffer_view_{};
         Microsoft::WRL::ComPtr<ID3D12Resource>              index_buffer_;
         Microsoft::WRL::ComPtr<ID3D12Resource>              upload_buffer_;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              const_buffer_;
+
 
         static const std::array<Vertex, 8>                  VERTICE_DATA_;
         static const std::array<std::uint16_t, 36>          INDICE_DATA_;

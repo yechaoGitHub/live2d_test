@@ -42,6 +42,7 @@ int main(int argc, char** argv)
 
                 case SDL_MOUSEBUTTONUP:
                     OutputDebugStringW(L"mouse click");
+                    renderer.Update();
                     renderer.Render();
                 break;
 

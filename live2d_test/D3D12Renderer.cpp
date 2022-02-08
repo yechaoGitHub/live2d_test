@@ -60,6 +60,11 @@ namespace D3D
     {
     }
 
+    float D3D12Renderer::AspectRatio() const
+    {
+        return static_cast<float>(client_width_) / client_height_;
+    }
+
     void D3D12Renderer::Initialize()
     {
         command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_FLAG_NONE);
@@ -79,17 +84,10 @@ namespace D3D
 
         fence_ = D3D12Manager::CreateFence(fence_value_);
 
-        D3D12_DESCRIPTOR_RANGE descriptor_range{};
-        descriptor_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-        descriptor_range.NumDescriptors = 1;
-        descriptor_range.BaseShaderRegister = 0;
-        descriptor_range.RegisterSpace = 0;
-        descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
         D3D12_ROOT_PARAMETER root_param{};
-        root_param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        root_param.DescriptorTable.NumDescriptorRanges = 1;
-        root_param.DescriptorTable.pDescriptorRanges = &descriptor_range;
+        root_param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        root_param.Descriptor.ShaderRegister = 0;
+        root_param.Descriptor.RegisterSpace = 0;
         root_signature_ = D3D12Manager::CreateRootSignature(&root_param, 1);
 
         std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
@@ -134,7 +132,30 @@ namespace D3D
 
         scissor_rect_ = { 0, 0, client_width_, client_height_ };
 
+        camera_.SetLens(0.25f * DirectX::XM_PI, AspectRatio(), 1.0f, 1000.0f);
+        camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -10.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
+        camera_.UpdateViewMatrix();
+
+        const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
+
         InitVertexIndexBuffer();
+    }
+
+    void D3D12Renderer::Update()
+    {
+        camera_.UpdateViewMatrix();
+
+        auto view = camera_.GetView();
+        auto proj = camera_.GetProj();
+        auto view_proj = view * proj;
+
+        ObjectConstants obj_constants;
+        XMStoreFloat4x4(&obj_constants.world_view_proj, XMMatrixTranspose(view_proj));
+
+        void* map_data{};
+        const_buffer_->Map(0, nullptr, &map_data);
+        ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
+        const_buffer_->Unmap(0, nullptr);
     }
 
     void D3D12Renderer::Render()
@@ -161,7 +182,16 @@ namespace D3D
         command_list_->ClearRenderTargetView(cur_back_buffer_view, DirectX::Colors::LightSteelBlue, 0, nullptr);
         command_list_->ClearDepthStencilView(cur_depth_stencil_view, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
+        command_list_->IASetVertexBuffers(0, 1, &vertex_buffer_view_);
+        command_list_->IASetIndexBuffer(&index_buffer_view_);
+        command_list_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        command_list_->SetGraphicsRootSignature(root_signature_.Get());
+        command_list_->SetGraphicsRootConstantBufferView(0, const_buffer_->GetGPUVirtualAddress());
+
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
+
+        command_list_->DrawIndexedInstanced(INDICE_DATA_.size(), 1, 0, 0, 0);
 
         resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -183,6 +213,7 @@ namespace D3D
         ThrowIfFailed(swap_chain_->GetLastPresentCount(&present_count));
         return present_count % 2;
     }
+
     void D3D12Renderer::FlushCommandQueue()
     {
         fence_value_++;
@@ -209,18 +240,6 @@ namespace D3D
         vertex_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_DEFAULT, vertices_size);
         index_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_DEFAULT, indices_size);
 
-        D3D12_SUBRESOURCE_DATA subResourceData = {};
-        subResourceData.pData = VERTICE_DATA_.data();
-        subResourceData.RowPitch = vertices_size;
-        subResourceData.SlicePitch = subResourceData.RowPitch;
-
-        D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout{};
-        uint32_t num_rows{};
-        uint64_t row_size_in_byte{};
-        uint64_t required_size{};
-        auto buffer_desc = vertex_buffer_->GetDesc();
-        D3D12Manager::GetDevice()->GetCopyableFootprints(&buffer_desc, 0, 1, 0, &layout, &num_rows, &row_size_in_byte, &required_size);
-        
         void* upload_map_data{};
         upload_buffer_->Map(0, nullptr, &upload_map_data);
         ::memcpy(upload_map_data, VERTICE_DATA_.data(), vertices_size);
@@ -249,6 +268,36 @@ namespace D3D
         command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
         FlushCommandQueue();
+
+        vertex_buffer_view_.BufferLocation = vertex_buffer_->GetGPUVirtualAddress();
+        vertex_buffer_view_.SizeInBytes = vertices_size;
+        vertex_buffer_view_.StrideInBytes = sizeof(Vertex);
+
+        ::memcpy(upload_map_data, INDICE_DATA_.data(), indices_size);
+
+        command_list_alloc_->Reset();
+        command_list_->Reset(command_list_alloc_.Get(), nullptr);
+
+        resource_barrier.Transition.pResource = index_buffer_.Get();
+        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        command_list_->ResourceBarrier(1, &resource_barrier);
+        command_list_->CopyBufferRegion(index_buffer_.Get(), 0, upload_buffer_.Get(), 0, indices_size);
+
+        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+        command_list_->ResourceBarrier(1, &resource_barrier);
+
+        ThrowIfFailed(command_list_->Close());
+
+        cmdsLists[0] = { command_list_.Get() };
+        command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+        FlushCommandQueue();
+
+        index_buffer_view_.BufferLocation = index_buffer_->GetGPUVirtualAddress();
+        index_buffer_view_.Format = DXGI_FORMAT_R16_UINT;
+        index_buffer_view_.SizeInBytes = indices_size;
 
     }
 };
