@@ -139,6 +139,7 @@ namespace D3D
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
         InitVertexIndexBuffer();
+        InitImageResource();
     }
 
     void D3D12Renderer::Update()
@@ -298,6 +299,18 @@ namespace D3D
         index_buffer_view_.BufferLocation = index_buffer_->GetGPUVirtualAddress();
         index_buffer_view_.Format = DXGI_FORMAT_R16_UINT;
         index_buffer_view_.SizeInBytes = indices_size;
+
+    }
+
+    void D3D12Renderer::InitImageResource()
+    {
+        image_resource_ = WICImage::LoadImageFormFile(L"./test.jpeg");
+        image_resource_ = WICImage::CovertToD3DPixelFormat(image_resource_.Get());
+
+        uint32_t width{}, height{};
+        image_resource_->GetSize(&width, &height);
+        texture_ = D3D12Manager::CreateTexture(width, height);
+
 
     }
 };

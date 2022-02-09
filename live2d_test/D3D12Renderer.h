@@ -3,6 +3,7 @@
 #include "D3D12Manager.h"
 #include "D3DCamera.h"
 #include "MathHelper.h"
+#include "WICImage.h"
 
 #include <vector>
 #include <array>
@@ -36,6 +37,7 @@ namespace D3D
         int GetCurrentRenderTargetIndex();
         void FlushCommandQueue();
         void InitVertexIndexBuffer();
+        void InitImageResource();
 
         HWND                                                window_handle_{};
         int                                                 client_width_{};
@@ -53,6 +55,7 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        dsv_heap_;
         Microsoft::WRL::ComPtr<ID3D12Resource>              back_target_buffer_[2];
         Microsoft::WRL::ComPtr<ID3D12Resource>              depth_stencil_buffer_;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              texture_;
 
         D3D12_VERTEX_BUFFER_VIEW                            vertex_buffer_view_{};
         Microsoft::WRL::ComPtr<ID3D12Resource>              vertex_buffer_;
@@ -73,7 +76,7 @@ namespace D3D
 
         Camera                                              camera_;
 
-
+        Microsoft::WRL::ComPtr<IWICBitmapSource>            image_resource_;
 
     };
 

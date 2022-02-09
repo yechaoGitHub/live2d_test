@@ -13,10 +13,10 @@
 
 namespace D3D
 {
+    //to do 添加一个默认的上传，下载资源的辅助渲染队列
     class D3D12Manager
     {
     public:
-        D3D12Manager();
         ~D3D12Manager();
    
         static const D3D12Manager& GetManager();
@@ -62,7 +62,11 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12Resource> CreateBuffer(D3D12_HEAP_TYPE type, uint64_t byte_size);
 
+        static Microsoft::WRL::ComPtr<ID3D12Resource> CreateTexture(uint32_t width, uint32_t height);
+
     private:
+        D3D12Manager();
+
         static D3D12Manager D3D12_MANAGER_INSTANCE_;
 
         static D3D12_RASTERIZER_DESC DefaultRasterizerDesc();

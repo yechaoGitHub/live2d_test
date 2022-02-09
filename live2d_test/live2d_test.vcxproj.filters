@@ -14,6 +14,9 @@
     <Filter Include="Shader">
       <UniqueIdentifier>{4f27fb36-3516-4d16-bd90-60adfb38bc31}</UniqueIdentifier>
     </Filter>
+    <Filter Include="WIC">
+      <UniqueIdentifier>{0e507379-16d5-4e75-91de-437df1a4c09c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Manager.cpp">
@@ -34,6 +37,9 @@
     <ClCompile Include="MathHelper.cpp">
       <Filter>D3D12Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="WICImage.cpp">
+      <Filter>WIC</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12Manager.h">
@@ -50,6 +56,9 @@
     </ClInclude>
     <ClInclude Include="MathHelper.h">
       <Filter>D3D12Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="WICImage.h">
+      <Filter>WIC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
