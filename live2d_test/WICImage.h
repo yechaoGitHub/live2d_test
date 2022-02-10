@@ -19,6 +19,8 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> LoadImageFormFile(const std::wstring& file_path);
         static Microsoft::WRL::ComPtr<IWICBitmapSource> CovertToD3DPixelFormat(IWICBitmapSource* source_img);
+        static Microsoft::WRL::ComPtr<IWICComponentInfo> GetImageComponenInfo(IWICBitmapSource* img);
+        static Microsoft::WRL::ComPtr<IWICPixelFormatInfo> GetImagePixelFormatInfo(IWICBitmapSource* img);
 
         static WICPixelFormatGUID GetD3DPixelFormat();
 

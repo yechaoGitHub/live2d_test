@@ -311,6 +311,34 @@ namespace D3D
         image_resource_->GetSize(&width, &height);
         texture_ = D3D12Manager::CreateTexture(width, height);
 
+        auto resource_layout = D3D12Manager::GetCopyableFootprints(texture_.Get());
+        
+        upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, resource_layout.total_byte_size * 1.5);
+
+        uint32_t ppb{};
+        WICImage::GetImagePixelFormatInfo(image_resource_.Get())->GetBitsPerPixel(&ppb);
+
+        uint32_t img_width{}, img_height{};
+        image_resource_->GetSize(&img_width, &img_height);
+
+        uint32_t img_row_pitch = (img_width * ppb + 7u) / 8u;
+
+        void* map_data{};
+        upload_buffer_->Map(0, nullptr, &map_data);
+        image_resource_->CopyPixels(nullptr, img_row_pitch, img_row_pitch * img_height, reinterpret_cast<BYTE*>(map_data));
+        upload_buffer_->Unmap(0, nullptr);
+
+
+        D3D12_RESOURCE_BARRIER resource_barrier{};
+        resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        resource_barrier.Transition.pResource = vertex_buffer_.Get();
+        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+
+
 
     }
 };

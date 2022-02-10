@@ -70,5 +70,36 @@ namespace D3D
         return ret;
     }
 
+    Microsoft::WRL::ComPtr<IWICComponentInfo> WICImage::GetImageComponenInfo(IWICBitmapSource* img)
+    {
+        auto& instance = WIC_IMAGE_INSTANCE_;
+
+        WICPixelFormatGUID format{};
+        ThrowIfFailed(img->GetPixelFormat(&format));
+
+        ComPtr<IWICComponentInfo> component_info{};
+        ThrowIfFailed(instance.wic_factory_->CreateComponentInfo(format, &component_info));
+
+        return component_info;
+    }
+
+    Microsoft::WRL::ComPtr<IWICPixelFormatInfo> WICImage::GetImagePixelFormatInfo(IWICBitmapSource* img)
+    {
+        auto pixel_format_info = GetImageComponenInfo(img);
+
+        WICComponentType type;
+        ThrowIfFailed(pixel_format_info->GetComponentType(&type));
+
+        if (type != WICPixelFormat)
+        {
+            ThrowIfFailed(E_FAIL);
+        }
+
+        Microsoft::WRL::ComPtr<IWICPixelFormatInfo> ret;
+        pixel_format_info.As(&ret);
+
+        return ret;
+    }
+
 };
 

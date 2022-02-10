@@ -375,6 +375,19 @@ namespace D3D
         return texture;
     }
 
+    D3D12Manager::ResourceLayout D3D12Manager::GetCopyableFootprints(ID3D12Resource* res, uint32_t first_resource_index, uint32_t num_resources, uint64_t base_offset)
+    {
+        ResourceLayout ret;
+        ret.fontprints.resize(num_resources);
+        ret.num_rows.resize(num_resources);
+        ret.row_size_in_bytes.resize(num_resources);
+
+        auto desc = res->GetDesc();
+        GetDevice()->GetCopyableFootprints(&desc, first_resource_index, num_resources, base_offset, ret.fontprints.data(), ret.num_rows.data(), ret.row_size_in_bytes.data(), &ret.total_byte_size);
+
+        return ret;
+    }
+
     D3D12_RASTERIZER_DESC D3D12Manager::DefaultRasterizerDesc()
     {
         static D3D12_RASTERIZER_DESC desc = 

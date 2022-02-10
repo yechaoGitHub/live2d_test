@@ -6,6 +6,7 @@
 #include <wrl.h>
 
 #include <string>
+#include <vector>
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
@@ -16,6 +17,15 @@ namespace D3D
     //to do 添加一个默认的上传，下载资源的辅助渲染队列
     class D3D12Manager
     {
+    public:
+        struct ResourceLayout
+        {
+            std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> fontprints;
+            std::vector<uint32_t> num_rows;
+            std::vector<uint64_t> row_size_in_bytes;
+            uint64_t total_byte_size = 0;
+        };
+
     public:
         ~D3D12Manager();
    
@@ -63,6 +73,8 @@ namespace D3D
         static Microsoft::WRL::ComPtr<ID3D12Resource> CreateBuffer(D3D12_HEAP_TYPE type, uint64_t byte_size);
 
         static Microsoft::WRL::ComPtr<ID3D12Resource> CreateTexture(uint32_t width, uint32_t height);
+
+        static ResourceLayout GetCopyableFootprints(ID3D12Resource* res, uint32_t first_resource_index = 0, uint32_t num_resources = 1, uint64_t base_offset = 0);
 
     private:
         D3D12Manager();
