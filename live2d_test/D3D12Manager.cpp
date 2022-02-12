@@ -26,6 +26,15 @@ namespace D3D
     {
         auto& d3d = D3D12_MANAGER_INSTANCE_;
 
+#if defined(DEBUG) || defined(_DEBUG) 
+        // Enable the D3D12 debug layer.
+        {
+            ComPtr<ID3D12Debug> debugController;
+            ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+            debugController->EnableDebugLayer();
+        }
+#endif
+
         ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&d3d.dxgi_factory_)));
 
         ComPtr<IDXGIAdapter1> adapter;
@@ -195,11 +204,13 @@ namespace D3D
         return pso;
     }
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignature(D3D12_ROOT_PARAMETER* root_param_arr, int count)
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignature(const D3D12_ROOT_PARAMETER* root_param_arr, int count, const D3D12_STATIC_SAMPLER_DESC* static_sampler, uint32_t sampler_count)
     {
         D3D12_ROOT_SIGNATURE_DESC desc = {};
         desc.NumParameters = count;
         desc.pParameters = root_param_arr;
+        desc.NumStaticSamplers = sampler_count;
+        desc.pStaticSamplers = static_sampler;
         desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
         ComPtr<ID3DBlob> serializedRootSig = nullptr;

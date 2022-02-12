@@ -23,6 +23,7 @@
     <ClCompile Include="D3D12Renderer.cpp" />
     <ClCompile Include="D3DCamera.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathHelper.cpp" />
     <ClCompile Include="WICImage.cpp" />
@@ -32,6 +33,7 @@
     <ClInclude Include="D3D12Renderer.h" />
     <ClInclude Include="D3DCamera.h" />
     <ClInclude Include="D3DUtil.h" />
+    <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="WICImage.h" />
   </ItemGroup>

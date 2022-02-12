@@ -4,6 +4,7 @@
 #include "D3DCamera.h"
 #include "MathHelper.h"
 #include "WICImage.h"
+#include "GeometryGenerator.h"
 
 #include <vector>
 #include <array>
@@ -12,15 +13,14 @@ namespace D3D
 {
     class D3D12Renderer
     {
-        struct Vertex
-        {
-            DirectX::XMFLOAT3 Pos;
-            DirectX::XMFLOAT4 Color;
-        };
-
         struct ObjectConstants
         {
-            DirectX::XMFLOAT4X4 world_view_proj = MathHelper::Identity4x4();
+            DirectX::XMFLOAT4X4 local_mat = MathHelper::Identity4x4();          //模型空间矩阵，缩放，旋转，平移
+            DirectX::XMFLOAT4X4 world_mat = MathHelper::Identity4x4();          //世界空间矩阵，主要用来转换到世界坐标
+            DirectX::XMFLOAT4X4 view_mat = MathHelper::Identity4x4();           //屏幕空间矩阵，转换到屏幕空间
+            DirectX::XMFLOAT4X4 proj_mat = MathHelper::Identity4x4();           //投影矩阵
+            DirectX::XMFLOAT4X4 view_proj_mat = MathHelper::Identity4x4();      //屏幕空间投影矩阵
+            DirectX::XMFLOAT4X4 texture_transform = MathHelper::Identity4x4();
         };
 
     public:
@@ -32,6 +32,8 @@ namespace D3D
         void Initialize();
         void Update();
         void Render();
+
+        static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
     private:
         int GetCurrentRenderTargetIndex();
@@ -53,6 +55,8 @@ namespace D3D
 
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        rtv_heap_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        dsv_heap_;
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        tex_heap_;
+
         Microsoft::WRL::ComPtr<ID3D12Resource>              back_target_buffer_[2];
         Microsoft::WRL::ComPtr<ID3D12Resource>              depth_stencil_buffer_;
         Microsoft::WRL::ComPtr<ID3D12Resource>              texture_;
@@ -64,9 +68,8 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12Resource>              upload_buffer_;
         Microsoft::WRL::ComPtr<ID3D12Resource>              const_buffer_;
 
-
-        static const std::array<Vertex, 8>                  VERTICE_DATA_;
-        static const std::array<std::uint16_t, 36>          INDICE_DATA_;
+        static GeometryGenerator                            GEO_GENERATOR_;
+        GeometryGenerator::MeshData                         mesh_data_;
 
         Microsoft::WRL::ComPtr<ID3DBlob>                    vs_shader_;
         Microsoft::WRL::ComPtr<ID3DBlob>                    ps_shader_;

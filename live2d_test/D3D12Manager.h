@@ -60,7 +60,7 @@ namespace D3D
             int rtv_num,
             DXGI_FORMAT dsv_format);
 
-        static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(D3D12_ROOT_PARAMETER* root_param_arr, int count);
+        static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(const D3D12_ROOT_PARAMETER* root_param_arr, int count, const D3D12_STATIC_SAMPLER_DESC* static_sampler = nullptr, uint32_t sampler_count = 0);
 
         static Microsoft::WRL::ComPtr<ID3D12Fence> CreateFence(uint64_t value);
 

@@ -1,53 +1,15 @@
 #include "D3D12Renderer.h"
 
-#include "DirectXColors.h"
-
-#include "D3DUtil.h"
 #include "DirectXTK/DescriptorHeap.h"
+#include "DirectXColors.h"
+#include "D3DUtil.h"
+
 
 namespace D3D
 {
     using namespace DirectX;
 
-    const std::array<D3D12Renderer::Vertex, 8>  D3D12Renderer::VERTICE_DATA_ = 
-    {
-            Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
-            Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
-            Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
-            Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
-            Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
-            Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
-            Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
-            Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
-    };
-
-    const std::array<std::uint16_t, 36> D3D12Renderer::INDICE_DATA_ = 
-    {
-        // front face
-        0, 1, 2,
-        0, 2, 3,
-
-        // back face
-        4, 6, 5,
-        4, 7, 6,
-
-        // left face
-        4, 5, 1,
-        4, 1, 0,
-
-        // right face
-        3, 2, 6,
-        3, 6, 7,
-
-        // top face
-        1, 5, 6,
-        1, 6, 2,
-
-        // bottom face
-        4, 0, 3,
-        4, 3, 7
-    };
-
+    GeometryGenerator D3D12Renderer::GEO_GENERATOR_;
 
     D3D12Renderer::D3D12Renderer(HWND hwnd, int width, int height) :
         window_handle_(hwnd),
@@ -84,17 +46,34 @@ namespace D3D
 
         fence_ = D3D12Manager::CreateFence(fence_value_);
 
-        D3D12_ROOT_PARAMETER root_param{};
-        root_param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-        root_param.Descriptor.ShaderRegister = 0;
-        root_param.Descriptor.RegisterSpace = 0;
-        root_signature_ = D3D12Manager::CreateRootSignature(&root_param, 1);
+        D3D12_DESCRIPTOR_RANGE descriptor_range{};
+        descriptor_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        descriptor_range.NumDescriptors = 1;
+        descriptor_range.BaseShaderRegister = 0;
+        descriptor_range.RegisterSpace = 0;
+        descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        D3D12_ROOT_PARAMETER root_param[2] = {};
+        root_param[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        root_param[0].DescriptorTable.NumDescriptorRanges = 1;
+        root_param[0].DescriptorTable.pDescriptorRanges = &descriptor_range;
+        root_param[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+        root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        root_param[1].Descriptor.ShaderRegister = 0;
+        root_param[1].Descriptor.RegisterSpace = 0;
+        root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+        auto static_samplers = GetStaticSamplers();
+
+        root_signature_ = D3D12Manager::CreateRootSignature(root_param, 2, static_samplers.data(), static_samplers.size());
 
         std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
         input_layout = 
         {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         };
 
         D3D12_SHADER_BYTECODE shaders[5] = {};
@@ -146,12 +125,29 @@ namespace D3D
     {
         camera_.UpdateViewMatrix();
 
+        auto rotation_axis = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+        DirectX::XMLoadFloat3(&rotation_axis);
+
+        auto xm_tans = DirectX::XMMatrixTranslation(5.f, 5.f, 0.0f);
+        auto xm_rot = DirectX::XMMatrixRotationNormal(DirectX::XMLoadFloat3(&rotation_axis), DirectX::XMConvertToRadians(45.f));
+        auto xm_scaler = DirectX::XMMatrixScaling(1.0f, 2.0f, 1.0f);
+        auto model_mat = xm_scaler * xm_rot * xm_tans;
+
+        auto xm_world_trans = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+        auto xm_world_scalar = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+        auto world_mat = xm_world_trans * xm_world_scalar;
+
         auto view = camera_.GetView();
         auto proj = camera_.GetProj();
         auto view_proj = view * proj;
 
         ObjectConstants obj_constants;
-        XMStoreFloat4x4(&obj_constants.world_view_proj, XMMatrixTranspose(view_proj));
+        XMStoreFloat4x4(&obj_constants.local_mat, model_mat);
+        XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
+        XMStoreFloat4x4(&obj_constants.view_mat, view);
+        XMStoreFloat4x4(&obj_constants.proj_mat, proj);
+        XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
+        XMStoreFloat4x4(&obj_constants.texture_transform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
         void* map_data{};
         const_buffer_->Map(0, nullptr, &map_data);
@@ -187,12 +183,16 @@ namespace D3D
         command_list_->IASetIndexBuffer(&index_buffer_view_);
         command_list_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        command_list_->SetGraphicsRootSignature(root_signature_.Get());
-        command_list_->SetGraphicsRootConstantBufferView(0, const_buffer_->GetGPUVirtualAddress());
+        command_list_->SetGraphicsRootSignature(root_signature_.Get()); 
+
+        ID3D12DescriptorHeap* heap[] = { tex_heap_.Get() };
+        command_list_->SetDescriptorHeaps(1, heap);
+        command_list_->SetGraphicsRootDescriptorTable(0, tex_heap_->GetGPUDescriptorHandleForHeapStart());
+        command_list_->SetGraphicsRootConstantBufferView(1, const_buffer_->GetGPUVirtualAddress());
 
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
 
-        command_list_->DrawIndexedInstanced(INDICE_DATA_.size(), 1, 0, 0, 0);
+        command_list_->DrawIndexedInstanced(mesh_data_.Indices16.size(), 1, 0, 0, 0);
 
         resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -206,6 +206,110 @@ namespace D3D
         FlushCommandQueue();
 
         swap_chain_->Present(0, 0);
+    }
+
+    std::array<const D3D12_STATIC_SAMPLER_DESC, 6> D3D12Renderer::GetStaticSamplers()
+    {
+        const D3D12_STATIC_SAMPLER_DESC pointWrap =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_POINT,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            0
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC pointClamp =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_POINT,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            1
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC linearWrap =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            2
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC linearClamp =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            3
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC anisotropicWrap =
+        {
+            D3D12_FILTER_ANISOTROPIC,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            0.0f,
+            8,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            4
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC anisotropicClamp =
+        {
+            D3D12_FILTER_ANISOTROPIC,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            0.0f,
+            8,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            5
+        };
+
+        return {
+            pointWrap, pointClamp,
+            linearWrap, linearClamp,
+            anisotropicWrap, anisotropicClamp };
     }
 
     int D3D12Renderer::GetCurrentRenderTargetIndex()
@@ -232,9 +336,10 @@ namespace D3D
 
     void D3D12Renderer::InitVertexIndexBuffer()
     {
-        uint64_t vertices_size = VERTICE_DATA_.size() * sizeof(Vertex);
-        uint64_t indices_size = INDICE_DATA_.size() * sizeof(uint16_t);
+        mesh_data_ = GEO_GENERATOR_.CreateBox(5.0f, 5.0f, 5.0f, 0);
 
+        uint32_t vertices_size = mesh_data_.Vertices.size() * sizeof(GeometryGenerator::Vertex);
+        uint32_t indices_size = mesh_data_.Indices16.size() * sizeof(uint16_t);
         uint64_t upload_buffer_length = (std::max)(vertices_size, indices_size) * 1.5;
 
         upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, upload_buffer_length);
@@ -243,7 +348,7 @@ namespace D3D
 
         void* upload_map_data{};
         upload_buffer_->Map(0, nullptr, &upload_map_data);
-        ::memcpy(upload_map_data, VERTICE_DATA_.data(), vertices_size);
+        ::memcpy(upload_map_data, mesh_data_.Vertices.data(), vertices_size);
 
         command_list_alloc_->Reset();
         command_list_->Reset(command_list_alloc_.Get(), nullptr);
@@ -272,9 +377,9 @@ namespace D3D
 
         vertex_buffer_view_.BufferLocation = vertex_buffer_->GetGPUVirtualAddress();
         vertex_buffer_view_.SizeInBytes = vertices_size;
-        vertex_buffer_view_.StrideInBytes = sizeof(Vertex);
+        vertex_buffer_view_.StrideInBytes = sizeof(GeometryGenerator::Vertex);
 
-        ::memcpy(upload_map_data, INDICE_DATA_.data(), indices_size);
+        ::memcpy(upload_map_data, mesh_data_.Indices16.data(), indices_size);
 
         command_list_alloc_->Reset();
         command_list_->Reset(command_list_alloc_.Get(), nullptr);
@@ -328,18 +433,55 @@ namespace D3D
         image_resource_->CopyPixels(nullptr, img_row_pitch, img_row_pitch * img_height, reinterpret_cast<BYTE*>(map_data));
         upload_buffer_->Unmap(0, nullptr);
 
+       
+        command_list_alloc_->Reset();
+        command_list_->Reset(command_list_alloc_.Get(), nullptr);
+
 
         D3D12_RESOURCE_BARRIER resource_barrier{};
         resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        resource_barrier.Transition.pResource = vertex_buffer_.Get();
+        resource_barrier.Transition.pResource = texture_.Get();
         resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
         resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
         resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
+        command_list_->ResourceBarrier(1, &resource_barrier);
 
+        D3D12_TEXTURE_COPY_LOCATION copy_src{};
+        copy_src.pResource = upload_buffer_.Get();
+        copy_src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        copy_src.PlacedFootprint = resource_layout.fontprints[0];
 
+        D3D12_TEXTURE_COPY_LOCATION copy_dest{};
+        copy_dest.pResource = texture_.Get();
+        copy_dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        copy_dest.SubresourceIndex = 0;
 
+        command_list_->CopyTextureRegion(&copy_dest, 0, 0, 0, &copy_src, nullptr);
+
+        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+        command_list_->ResourceBarrier(1, &resource_barrier);
+
+        ThrowIfFailed(command_list_->Close());
+
+        ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
+        command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+        FlushCommandQueue();
+
+        tex_heap_ = D3D12Manager::CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
+        srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srv_desc.Format = texture_->GetDesc().Format;
+        srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srv_desc.Texture2D.MostDetailedMip = 0;
+        srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
+        srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
+        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, tex_heap_->GetCPUDescriptorHandleForHeapStart());
     }
+
 };
 
