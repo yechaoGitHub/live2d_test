@@ -73,7 +73,8 @@ namespace D3D
         {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         };
 
         D3D12_SHADER_BYTECODE shaders[5] = {};
@@ -144,9 +145,10 @@ namespace D3D
         ObjectConstants obj_constants;
         XMStoreFloat4x4(&obj_constants.local_mat, model_mat);
         XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
+        XMStoreFloat4x4(&obj_constants.world_mat, DirectX::XMMatrixTranspose(model_mat * world_mat));
         XMStoreFloat4x4(&obj_constants.view_mat, view);
         XMStoreFloat4x4(&obj_constants.proj_mat, proj);
-        XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
+        XMStoreFloat4x4(&obj_constants.view_proj_mat, DirectX::XMMatrixTranspose(view_proj));
         XMStoreFloat4x4(&obj_constants.texture_transform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
         void* map_data{};

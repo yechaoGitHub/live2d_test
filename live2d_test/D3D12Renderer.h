@@ -15,8 +15,9 @@ namespace D3D
     {
         struct ObjectConstants
         {
-            DirectX::XMFLOAT4X4 local_mat = MathHelper::Identity4x4();          //模型空间矩阵，缩放，旋转，平移
+            DirectX::XMFLOAT4X4 local_mat = MathHelper::Identity4x4();          //本地空间矩阵，缩放，旋转，平移
             DirectX::XMFLOAT4X4 world_mat = MathHelper::Identity4x4();          //世界空间矩阵，主要用来转换到世界坐标
+            DirectX::XMFLOAT4X4 model_mat = MathHelper::Identity4x4();          //模型矩阵，等于本地 * 世界
             DirectX::XMFLOAT4X4 view_mat = MathHelper::Identity4x4();           //屏幕空间矩阵，转换到屏幕空间
             DirectX::XMFLOAT4X4 proj_mat = MathHelper::Identity4x4();           //投影矩阵
             DirectX::XMFLOAT4X4 view_proj_mat = MathHelper::Identity4x4();      //屏幕空间投影矩阵

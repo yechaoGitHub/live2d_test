@@ -305,7 +305,7 @@ namespace D3D
             &heap_property,
             D3D12_HEAP_FLAG_NONE,
             &depth_stencil_desc,
-            D3D12_RESOURCE_STATE_COMMON,
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
             &opt_clear,
             IID_PPV_ARGS(&depth_stencil_buffer)));
 
