@@ -27,6 +27,8 @@ namespace D3D
 
     void WICImage::Uninitialize()
     {
+        auto& instance = WIC_IMAGE_INSTANCE_;
+        instance.wic_factory_ = nullptr;
         CoUninitialize();
     }
 

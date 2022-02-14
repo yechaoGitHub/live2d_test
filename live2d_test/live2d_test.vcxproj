@@ -23,9 +23,11 @@
     <ClCompile Include="D3D12Renderer.cpp" />
     <ClCompile Include="D3DCamera.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
+    <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathHelper.cpp" />
+    <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="WICImage.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -33,14 +35,19 @@
     <ClInclude Include="D3D12Renderer.h" />
     <ClInclude Include="D3DCamera.h" />
     <ClInclude Include="D3DUtil.h" />
+    <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="PointLight.h" />
     <ClInclude Include="WICImage.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\color.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\light.hlsi" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

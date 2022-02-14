@@ -62,6 +62,8 @@ int main(int argc, char** argv)
     SDL_DestroyWindow(window);                              
     SDL_Quit();
 
+    renderer.ClearUp();
+    renderer.~D3D12Renderer();
     D3D::WICImage::Uninitialize();
 
     return 0;

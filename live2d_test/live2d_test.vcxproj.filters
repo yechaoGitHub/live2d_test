@@ -17,6 +17,9 @@
     <Filter Include="WIC">
       <UniqueIdentifier>{0e507379-16d5-4e75-91de-437df1a4c09c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="D3D12Renderer\Light">
+      <UniqueIdentifier>{d17c45d6-6922-41c0-b411-54c183cec08a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Manager.cpp">
@@ -43,6 +46,12 @@
     <ClCompile Include="GeometryGenerator.cpp">
       <Filter>D3D12Manager</Filter>
     </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>D3D12Renderer\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
+      <Filter>D3D12Renderer\Light</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12Manager.h">
@@ -66,10 +75,21 @@
     <ClInclude Include="GeometryGenerator.h">
       <Filter>D3D12Manager</Filter>
     </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>D3D12Renderer\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
+      <Filter>D3D12Renderer\Light</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\color.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\light.hlsi">
+      <Filter>Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

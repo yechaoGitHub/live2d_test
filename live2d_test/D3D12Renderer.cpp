@@ -20,6 +20,7 @@ namespace D3D
 
     D3D12Renderer::~D3D12Renderer()
     {
+
     }
 
     float D3D12Renderer::AspectRatio() const
@@ -53,7 +54,7 @@ namespace D3D
         descriptor_range.RegisterSpace = 0;
         descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-        D3D12_ROOT_PARAMETER root_param[2] = {};
+        D3D12_ROOT_PARAMETER root_param[3] = {};
         root_param[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
         root_param[0].DescriptorTable.NumDescriptorRanges = 1;
         root_param[0].DescriptorTable.pDescriptorRanges = &descriptor_range;
@@ -64,9 +65,14 @@ namespace D3D
         root_param[1].Descriptor.RegisterSpace = 0;
         root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+        root_param[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        root_param[2].Descriptor.ShaderRegister = 1;
+        root_param[2].Descriptor.RegisterSpace = 0;
+        root_param[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
         auto static_samplers = GetStaticSamplers();
 
-        root_signature_ = D3D12Manager::CreateRootSignature(root_param, 2, static_samplers.data(), static_samplers.size());
+        root_signature_ = D3D12Manager::CreateRootSignature(root_param, _countof(root_param), static_samplers.data(), static_samplers.size());
 
         std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
         input_layout = 
@@ -96,11 +102,11 @@ namespace D3D
         rtv_heap_ = D3D12Manager::CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
         dsv_heap_ = D3D12Manager::CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 
-        DirectX::DescriptorHeap dx_rtv_heap(rtv_heap_.Get());
+        DescriptorHeap dx_rtv_heap(rtv_heap_.Get());
         D3D12Manager::GetDevice()->CreateRenderTargetView(back_target_buffer_[0].Get(), nullptr, dx_rtv_heap.GetCpuHandle(0));
         D3D12Manager::GetDevice()->CreateRenderTargetView(back_target_buffer_[1].Get(), nullptr, dx_rtv_heap.GetCpuHandle(1));
 
-        DirectX::DescriptorHeap dx_dsv_heap(dsv_heap_.Get());
+        DescriptorHeap dx_dsv_heap(dsv_heap_.Get());
         D3D12Manager::GetDevice()->CreateDepthStencilView(depth_stencil_buffer_.Get(), nullptr, dx_dsv_heap.GetCpuHandle(0));
 
         screen_viewport_.TopLeftX = 0;
@@ -112,7 +118,7 @@ namespace D3D
 
         scissor_rect_ = { 0, 0, client_width_, client_height_ };
 
-        camera_.SetLens(0.25f * DirectX::XM_PI, AspectRatio(), 1.0f, 1000.0f);
+        camera_.SetLens(0.25f * XM_PI, AspectRatio(), 1.0f, 1000.0f);
         camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -10.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
         camera_.UpdateViewMatrix();
 
@@ -120,22 +126,28 @@ namespace D3D
 
         InitVertexIndexBuffer();
         InitImageResource();
+        InitLight();
+    }
+
+    void D3D12Renderer::ClearUp()
+    {
+        FlushCommandQueue();
     }
 
     void D3D12Renderer::Update()
     {
         camera_.UpdateViewMatrix();
 
-        auto rotation_axis = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
-        DirectX::XMLoadFloat3(&rotation_axis);
+        auto rotation_axis = XMFLOAT3(0.0f, 1.0f, 0.0f);
+        XMLoadFloat3(&rotation_axis);
 
-        auto xm_tans = DirectX::XMMatrixTranslation(5.f, 5.f, 0.0f);
-        auto xm_rot = DirectX::XMMatrixRotationNormal(DirectX::XMLoadFloat3(&rotation_axis), DirectX::XMConvertToRadians(45.f));
-        auto xm_scaler = DirectX::XMMatrixScaling(1.0f, 2.0f, 1.0f);
+        auto xm_tans = XMMatrixTranslation(5.f, 5.f, 0.0f);
+        auto xm_rot = XMMatrixRotationNormal(XMLoadFloat3(&rotation_axis), DirectX::XMConvertToRadians(45.f));
+        auto xm_scaler = XMMatrixScaling(1.0f, 2.0f, 1.0f);
         auto model_mat = xm_scaler * xm_rot * xm_tans;
 
-        auto xm_world_trans = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-        auto xm_world_scalar = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+        auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+        auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
         auto world_mat = xm_world_trans * xm_world_scalar;
 
         auto view = camera_.GetView();
@@ -145,11 +157,11 @@ namespace D3D
         ObjectConstants obj_constants;
         XMStoreFloat4x4(&obj_constants.local_mat, model_mat);
         XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
-        XMStoreFloat4x4(&obj_constants.world_mat, DirectX::XMMatrixTranspose(model_mat * world_mat));
+        XMStoreFloat4x4(&obj_constants.world_mat, XMMatrixTranspose(model_mat * world_mat));
         XMStoreFloat4x4(&obj_constants.view_mat, view);
         XMStoreFloat4x4(&obj_constants.proj_mat, proj);
-        XMStoreFloat4x4(&obj_constants.view_proj_mat, DirectX::XMMatrixTranspose(view_proj));
-        XMStoreFloat4x4(&obj_constants.texture_transform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+        XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
+        XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
         void* map_data{};
         const_buffer_->Map(0, nullptr, &map_data);
@@ -164,8 +176,8 @@ namespace D3D
 
         int back_index = GetCurrentRenderTargetIndex();
         auto cur_back_buffer = back_target_buffer_[back_index];
-        auto cur_back_buffer_view = DirectX::DescriptorHeap(rtv_heap_.Get()).GetCpuHandle(back_index);
-        auto cur_depth_stencil_view = DirectX::DescriptorHeap(dsv_heap_.Get()).GetCpuHandle(0);
+        auto cur_back_buffer_view = DescriptorHeap(rtv_heap_.Get()).GetCpuHandle(back_index);
+        auto cur_depth_stencil_view = DescriptorHeap(dsv_heap_.Get()).GetCpuHandle(0);
 
         command_list_->RSSetViewports(1, &screen_viewport_);
         command_list_->RSSetScissorRects(1, &scissor_rect_);
@@ -178,7 +190,7 @@ namespace D3D
         resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
         command_list_->ResourceBarrier(1, &resource_barrier);
 
-        command_list_->ClearRenderTargetView(cur_back_buffer_view, DirectX::Colors::LightSteelBlue, 0, nullptr);
+        command_list_->ClearRenderTargetView(cur_back_buffer_view, Colors::LightSteelBlue, 0, nullptr);
         command_list_->ClearDepthStencilView(cur_depth_stencil_view, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
         command_list_->IASetVertexBuffers(0, 1, &vertex_buffer_view_);
@@ -191,6 +203,7 @@ namespace D3D
         command_list_->SetDescriptorHeaps(1, heap);
         command_list_->SetGraphicsRootDescriptorTable(0, tex_heap_->GetGPUDescriptorHandleForHeapStart());
         command_list_->SetGraphicsRootConstantBufferView(1, const_buffer_->GetGPUVirtualAddress());
+        command_list_->SetGraphicsRootConstantBufferView(2, light_buffer_resource_->GetGPUVirtualAddress());
 
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
 
@@ -483,6 +496,24 @@ namespace D3D
         srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
         srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
         D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, tex_heap_->GetCPUDescriptorHandleForHeapStart());
+    }
+
+    void D3D12Renderer::InitLight()
+    {
+        auto buffer_size = CalcConstantBufferByteSize(sizeof(LightConstBuffer) + (MAX_LIGHT_NUM_ - 1) * sizeof(DirectionalLight));
+
+        light_buffer_resource_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, buffer_size);
+
+        dir_light_.direction = { 1.0f, 2.0f, 3.0f }; 
+        dir_light_.color = { 4.0f, 5.0f, 6.0f };
+        dir_light_.intensity = 7.0f;
+
+        LightConstBuffer* light_const_ptr{};
+        light_buffer_resource_->Map(0, nullptr, reinterpret_cast<void**>(&light_const_ptr));
+        light_const_ptr->light_nums = 1;
+        light_const_ptr->dir_light_arr[0] = dir_light_;
+        light_buffer_resource_->Unmap(0, nullptr);
+
     }
 
 };

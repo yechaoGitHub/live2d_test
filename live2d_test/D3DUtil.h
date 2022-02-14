@@ -5,6 +5,9 @@
 
 namespace D3D
 {
+    #define STRUCT_ALIGN_16	__declspec(align(16))
+    #define STRUCT_ALIGN(v)	__declspec(align(v))
+
     static uint32_t CalcConstantBufferByteSize(uint32_t byteSize)
     {
         // Constant buffers must be a multiple of the minimum hardware

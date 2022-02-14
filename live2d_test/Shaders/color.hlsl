@@ -1,3 +1,5 @@
+#include "light.hlsi"
+
 Texture2D gDiffuseMap : register(t0);
 SamplerState gsamLinear : register(s0);
 
@@ -10,6 +12,12 @@ cbuffer cbPerObject : register(b0)
     float4x4 PROJ_MAT;          //投影矩阵
     float4x4 VIEW_PROJ_MAT;     //屏幕空间投影矩阵
     float4x4 TEX_TRANSFORM;
+};
+
+cbuffer LightConstBuffer : register(b1)
+{
+    uint DIRECTIONAL_LIGHT_NUM;
+    DirectionalLight DIRECTIONAL_LIGHT_ARR[MAX_LIGHT_NUM];
 };
 
 struct VertexIn

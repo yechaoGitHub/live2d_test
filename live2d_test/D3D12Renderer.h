@@ -5,6 +5,7 @@
 #include "MathHelper.h"
 #include "WICImage.h"
 #include "GeometryGenerator.h"
+#include "DirectionalLight.h"
 
 #include <vector>
 #include <array>
@@ -13,16 +14,24 @@ namespace D3D
 {
     class D3D12Renderer
     {
+#pragma pack(push,1)
         struct ObjectConstants
         {
-            DirectX::XMFLOAT4X4 local_mat = MathHelper::Identity4x4();          //本地空间矩阵，缩放，旋转，平移
-            DirectX::XMFLOAT4X4 world_mat = MathHelper::Identity4x4();          //世界空间矩阵，主要用来转换到世界坐标
-            DirectX::XMFLOAT4X4 model_mat = MathHelper::Identity4x4();          //模型矩阵，等于本地 * 世界
-            DirectX::XMFLOAT4X4 view_mat = MathHelper::Identity4x4();           //屏幕空间矩阵，转换到屏幕空间
-            DirectX::XMFLOAT4X4 proj_mat = MathHelper::Identity4x4();           //投影矩阵
-            DirectX::XMFLOAT4X4 view_proj_mat = MathHelper::Identity4x4();      //屏幕空间投影矩阵
-            DirectX::XMFLOAT4X4 texture_transform = MathHelper::Identity4x4();
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 local_mat = MathHelper::Identity4x4();          //本地空间矩阵，缩放，旋转，平移
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 world_mat = MathHelper::Identity4x4();          //世界空间矩阵，主要用来转换到世界坐标
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 model_mat = MathHelper::Identity4x4();          //模型矩阵，等于本地 * 世界
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 view_mat = MathHelper::Identity4x4();           //屏幕空间矩阵，转换到屏幕空间
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 proj_mat = MathHelper::Identity4x4();           //投影矩阵
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 view_proj_mat = MathHelper::Identity4x4();      //屏幕空间投影矩阵
+            STRUCT_ALIGN_16 DirectX::XMFLOAT4X4 texture_transform = MathHelper::Identity4x4();
         };
+
+        struct LightConstBuffer 
+        {
+            STRUCT_ALIGN_16 uint32_t light_nums = 0;
+            STRUCT_ALIGN_16 DirectionalLight dir_light_arr[1];
+        };
+#pragma pack(pop)
 
     public:
         D3D12Renderer(HWND hwnd, int width, int height);
@@ -31,6 +40,7 @@ namespace D3D
         float AspectRatio() const;
 
         void Initialize();
+        void ClearUp();
         void Update();
         void Render();
 
@@ -41,6 +51,7 @@ namespace D3D
         void FlushCommandQueue();
         void InitVertexIndexBuffer();
         void InitImageResource();
+        void InitLight();
 
         HWND                                                window_handle_{};
         int                                                 client_width_{};
@@ -82,6 +93,10 @@ namespace D3D
 
         Microsoft::WRL::ComPtr<IWICBitmapSource>            image_resource_;
 
+        static const uint32_t                               MAX_LIGHT_NUM_ = 10;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              light_buffer_resource_;
+        LightConstBuffer                                    light_const_buffer_;
+        DirectionalLight                                    dir_light_;
     };
 
 };
