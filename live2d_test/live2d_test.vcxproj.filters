@@ -20,6 +20,12 @@
     <Filter Include="D3D12Renderer\Light">
       <UniqueIdentifier>{d17c45d6-6922-41c0-b411-54c183cec08a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="D3D12Renderer\Model">
+      <UniqueIdentifier>{11423fcb-d084-438c-b494-4464f142f49e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="D3D12Renderer\Util">
+      <UniqueIdentifier>{d05be7ef-10f7-4305-a8e5-aceab987f965}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Manager.cpp">
@@ -37,9 +43,6 @@
     <ClCompile Include="D3DCamera.cpp">
       <Filter>D3D12Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="MathHelper.cpp">
-      <Filter>D3D12Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="WICImage.cpp">
       <Filter>WIC</Filter>
     </ClCompile>
@@ -51,6 +54,15 @@
     </ClCompile>
     <ClCompile Include="DirectionalLight.cpp">
       <Filter>D3D12Renderer\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>D3D12Renderer\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="MathHelper.cpp">
+      <Filter>D3D12Renderer\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="GameTimer.cpp">
+      <Filter>D3D12Renderer\Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -66,9 +78,6 @@
     <ClInclude Include="D3DCamera.h">
       <Filter>D3D12Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="MathHelper.h">
-      <Filter>D3D12Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="WICImage.h">
       <Filter>WIC</Filter>
     </ClInclude>
@@ -80,6 +89,15 @@
     </ClInclude>
     <ClInclude Include="DirectionalLight.h">
       <Filter>D3D12Renderer\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>D3D12Renderer\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="MathHelper.h">
+      <Filter>D3D12Renderer\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="GameTimer.h">
+      <Filter>D3D12Renderer\Util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

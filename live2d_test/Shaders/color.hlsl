@@ -51,6 +51,13 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
     float4 color = gDiffuseMap.Sample(gsamLinear, pin.TexC);
+
+    for (uint i = 0; i < DIRECTIONAL_LIGHT_NUM; i++)
+    {
+        float dir_coe = dot(pin.NormalW, normalize(DIRECTIONAL_LIGHT_ARR[i].direction));
+        color += color * dir_coe * DIRECTIONAL_LIGHT_ARR[i].intensity;
+    }
+    
     return color;
 }
 

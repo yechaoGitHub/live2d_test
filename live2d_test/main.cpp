@@ -33,7 +33,7 @@ int main(int argc, char** argv)
     bool quit{ false };
     while (!quit) 
     {
-        while (SDL_PollEvent(&windows_event)) 
+        if (SDL_PollEvent(&windows_event)) 
         {
             switch (windows_event.type)
             {
@@ -48,14 +48,16 @@ int main(int argc, char** argv)
                 break;
 
                 case SDL_MOUSEBUTTONUP:
-                    OutputDebugStringW(L"mouse click");
-                    renderer.Update();
-                    renderer.Render();
                 break;
 
                 default:
                 break;
             }
+        }
+        else 
+        {
+            renderer.Update();
+            renderer.Render();
         }
     }
                  

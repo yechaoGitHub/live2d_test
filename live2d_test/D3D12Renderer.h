@@ -6,6 +6,8 @@
 #include "WICImage.h"
 #include "GeometryGenerator.h"
 #include "DirectionalLight.h"
+#include "Model.h"
+#include "GameTimer.h"
 
 #include <vector>
 #include <array>
@@ -37,6 +39,8 @@ namespace D3D
         D3D12Renderer(HWND hwnd, int width, int height);
         ~D3D12Renderer();
 
+        Camera& GetCamera();
+
         float AspectRatio() const;
 
         void Initialize();
@@ -45,6 +49,14 @@ namespace D3D
         void Render();
 
         static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+
+    protected:
+        virtual void OnMouseDown(uint8_t btn, uint32_t x, uint32_t y);
+        virtual void OnMouseMove(uint32_t x, uint32_t y);
+        virtual void OnMouseUp(uint8_t btn, uint32_t x, uint32_t y);
+
+        virtual void OnKeyDown(uint32_t key);
+        virtual void OnKeyUp(uint32_t key);
 
     private:
         int GetCurrentRenderTargetIndex();
@@ -97,6 +109,10 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12Resource>              light_buffer_resource_;
         LightConstBuffer                                    light_const_buffer_;
         DirectionalLight                                    dir_light_;
+
+        Model                                               model_;
+
+        GameTimer                                           timer_;
     };
 
 };

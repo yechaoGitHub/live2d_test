@@ -24,9 +24,11 @@
     <ClCompile Include="D3DCamera.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
+    <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathHelper.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="WICImage.cpp" />
   </ItemGroup>
@@ -36,8 +38,10 @@
     <ClInclude Include="D3DCamera.h" />
     <ClInclude Include="D3DUtil.h" />
     <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="PointLight.h" />
     <ClInclude Include="WICImage.h" />
   </ItemGroup>

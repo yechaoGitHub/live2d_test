@@ -23,6 +23,11 @@ namespace D3D
 
     }
 
+    Camera& D3D12Renderer::GetCamera()
+    {
+        return camera_;
+    }
+
     float D3D12Renderer::AspectRatio() const
     {
         return static_cast<float>(client_width_) / client_height_;
@@ -124,6 +129,10 @@ namespace D3D
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
+        model_.SetOriention({ 0.5f, 0.5f, 0.0f });
+
+        timer_.Start();
+
         InitVertexIndexBuffer();
         InitImageResource();
         InitLight();
@@ -136,15 +145,13 @@ namespace D3D
 
     void D3D12Renderer::Update()
     {
+        timer_.Tick();
+        float tick = timer_.DeltaTime();
+
+
+
+
         camera_.UpdateViewMatrix();
-
-        auto rotation_axis = XMFLOAT3(0.0f, 1.0f, 0.0f);
-        XMLoadFloat3(&rotation_axis);
-
-        auto xm_tans = XMMatrixTranslation(5.f, 5.f, 0.0f);
-        auto xm_rot = XMMatrixRotationNormal(XMLoadFloat3(&rotation_axis), DirectX::XMConvertToRadians(45.f));
-        auto xm_scaler = XMMatrixScaling(1.0f, 2.0f, 1.0f);
-        auto model_mat = xm_scaler * xm_rot * xm_tans;
 
         auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
         auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
@@ -155,9 +162,10 @@ namespace D3D
         auto view_proj = view * proj;
 
         ObjectConstants obj_constants;
-        XMStoreFloat4x4(&obj_constants.local_mat, model_mat);
+        obj_constants.local_mat = model_.GetModelMatrix4x4();
+
         XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
-        XMStoreFloat4x4(&obj_constants.world_mat, XMMatrixTranspose(model_mat * world_mat));
+        XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
         XMStoreFloat4x4(&obj_constants.view_mat, view);
         XMStoreFloat4x4(&obj_constants.proj_mat, proj);
         XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
@@ -325,6 +333,31 @@ namespace D3D
             pointWrap, pointClamp,
             linearWrap, linearClamp,
             anisotropicWrap, anisotropicClamp };
+    }
+
+    void D3D12Renderer::OnMouseDown(uint8_t btn, uint32_t x, uint32_t y)
+    {
+
+    }
+
+    void D3D12Renderer::OnMouseMove(uint32_t x, uint32_t y)
+    {
+
+    }
+
+    void D3D12Renderer::OnMouseUp(uint8_t btn, uint32_t x, uint32_t y)
+    {
+
+    }
+
+    void D3D12Renderer::OnKeyDown(uint32_t key)
+    {
+
+    }
+
+    void D3D12Renderer::OnKeyUp(uint32_t key)
+    {
+
     }
 
     int D3D12Renderer::GetCurrentRenderTargetIndex()
@@ -504,15 +537,17 @@ namespace D3D
 
         light_buffer_resource_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, buffer_size);
 
-        dir_light_.direction = { 1.0f, 2.0f, 3.0f }; 
-        dir_light_.color = { 4.0f, 5.0f, 6.0f };
-        dir_light_.intensity = 7.0f;
+        dir_light_.direction = { 1.0f, -1.0f, 1.0f }; 
+        dir_light_.color = { 1.0f, 1.0f, 0.0f };
+        dir_light_.intensity = 1.0f;
 
         LightConstBuffer* light_const_ptr{};
         light_buffer_resource_->Map(0, nullptr, reinterpret_cast<void**>(&light_const_ptr));
         light_const_ptr->light_nums = 1;
         light_const_ptr->dir_light_arr[0] = dir_light_;
         light_buffer_resource_->Unmap(0, nullptr);
+
+
 
     }
 
