@@ -42,12 +42,23 @@ int main(int argc, char** argv)
                 break;
 
                 case SDL_KEYDOWN:
+                    renderer.OnKeyDown(windows_event.key.keysym.sym);
                 break;
 
                 case SDL_KEYUP:
+                    renderer.OnKeyUp(windows_event.key.keysym.sym);
+                break;
+
+                case SDL_MOUSEBUTTONDOWN:
+                    renderer.OnMouseDown(windows_event.button.button, windows_event.button.x, windows_event.button.y);
+                break;
+
+                case SDL_MOUSEMOTION:
+                    renderer.OnMouseMove(windows_event.button.x, windows_event.button.y);
                 break;
 
                 case SDL_MOUSEBUTTONUP:
+                    renderer.OnMouseUp(windows_event.button.button, windows_event.button.x, windows_event.button.y);
                 break;
 
                 default:

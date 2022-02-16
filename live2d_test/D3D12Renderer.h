@@ -50,7 +50,6 @@ namespace D3D
 
         static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
-    protected:
         virtual void OnMouseDown(uint8_t btn, uint32_t x, uint32_t y);
         virtual void OnMouseMove(uint32_t x, uint32_t y);
         virtual void OnMouseUp(uint8_t btn, uint32_t x, uint32_t y);
@@ -64,6 +63,9 @@ namespace D3D
         void InitVertexIndexBuffer();
         void InitImageResource();
         void InitLight();
+
+        void HandleInput(float duration);
+        void UpdateInput(float duration, uint32_t vk_key);
 
         HWND                                                window_handle_{};
         int                                                 client_width_{};
@@ -102,6 +104,7 @@ namespace D3D
         D3D12_RECT                                          scissor_rect_{};
 
         Camera                                              camera_;
+        float                                               camera_move_speed_ = 1.0f;
 
         Microsoft::WRL::ComPtr<IWICBitmapSource>            image_resource_;
 
@@ -113,6 +116,10 @@ namespace D3D
         Model                                               model_;
 
         GameTimer                                           timer_;
+
+        bool                                                mouse_click_ = false;
+        uint32_t                                            mouse_start_x_ = 0;
+        uint32_t                                            mouse_start_y_ = 0;
     };
 
 };

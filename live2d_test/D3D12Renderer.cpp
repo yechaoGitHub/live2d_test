@@ -147,11 +147,8 @@ namespace D3D
     {
         timer_.Tick();
         float tick = timer_.DeltaTime();
+        HandleInput(tick);
 
-
-
-
-        camera_.UpdateViewMatrix();
 
         auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
         auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
@@ -337,7 +334,11 @@ namespace D3D
 
     void D3D12Renderer::OnMouseDown(uint8_t btn, uint32_t x, uint32_t y)
     {
-
+        ::SetCapture(window_handle_);
+        
+        mouse_click_ = true;
+        mouse_start_x_ = x;
+        mouse_start_y_ = y;
     }
 
     void D3D12Renderer::OnMouseMove(uint32_t x, uint32_t y)
@@ -347,7 +348,11 @@ namespace D3D
 
     void D3D12Renderer::OnMouseUp(uint8_t btn, uint32_t x, uint32_t y)
     {
+        ::ReleaseCapture();
 
+        mouse_click_ = false;
+        mouse_start_x_ = 0;
+        mouse_start_y_ = 0;
     }
 
     void D3D12Renderer::OnKeyDown(uint32_t key)
@@ -547,7 +552,79 @@ namespace D3D
         light_const_ptr->dir_light_arr[0] = dir_light_;
         light_buffer_resource_->Unmap(0, nullptr);
 
+    }
 
+    void D3D12Renderer::HandleInput(float duration)
+    {
+        float distance = duration * camera_move_speed_;
+        if (distance != 0.0f) 
+        {
+            if (::GetAsyncKeyState('W') & 0x8000) 
+            {
+                camera_.Walk(distance);
+            }
+
+            if (::GetAsyncKeyState('A') & 0x8000)
+            {
+                camera_.Strafe(-distance);
+            }
+
+            if (::GetAsyncKeyState('S') & 0x8000)
+            {
+                camera_.Walk(-distance);
+            }
+
+            if (::GetAsyncKeyState('D') & 0x8000)
+            {
+                camera_.Strafe(distance);
+            }
+
+            if (::GetAsyncKeyState(VK_SPACE) & 0x8000) 
+            {
+                camera_.Float(distance);
+            }
+
+            if (::GetAsyncKeyState(VK_CONTROL) & 0x8000)
+            {
+                camera_.Float(-distance);
+            }
+
+            camera_.UpdateViewMatrix();
+        }
+
+        if (mouse_click_) 
+        {
+
+        }
+
+    }
+
+    void D3D12Renderer::UpdateInput(float duration, uint32_t vk_key)
+    {
+        switch (vk_key)
+        {
+            case 'W':
+            {
+                float d = (duration) * camera_move_speed_;
+                camera_.Walk(d);
+                camera_.UpdateViewMatrix();
+            }
+            break;
+
+            case 'A':
+            {
+                float d = (duration) * camera_move_speed_;
+                camera_.Walk(-d);
+                camera_.UpdateViewMatrix();
+            }
+            break;
+
+            case 'S':
+            break;
+
+            case 'D':
+            break;
+        }
 
     }
 
