@@ -601,23 +601,28 @@ namespace D3D
             ThrowIfFalse(::GetCursorPos(&pt));
             ThrowIfFalse(::ScreenToClient(window_handle_, &pt));
 
-            float dx = XMConvertToRadians(pt.x - mouse_start_x_);
-            float dy = XMConvertToRadians(pt.y - mouse_start_y_);
+            auto dx = pt.x - mouse_start_x_;
+            auto dy = pt.y - mouse_start_y_;
+            if (dx != 0 || dy != 0) 
+            {
+                float dxf = XMConvertToRadians(dx);
+                float dyf = XMConvertToRadians(dy);
 
-            XMFLOAT3 y_axis = { 0.0f, 1.0f, 0.0f };
-            XMFLOAT3 x_axis = { 1.0, 1.0f, 0.0f };
-            auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dx);
-            auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dy);
+                XMFLOAT3 y_axis = { 0.0f, 1.0f, 0.0f };
+                XMFLOAT3 x_axis = { 1.0, 1.0f, 0.0f };
+                auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dxf);
+                auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dyf);
 
-            auto qr = XMQuaternionMultiply(qx, qy);
-            auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&start_look_at_), qr);
-            auto v_up = XMQuaternionMultiply(XMLoadFloat3(&start_up_), qr);
+                auto qr = XMQuaternionMultiply(qx, qy);
+                auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&start_look_at_), qr);
+                auto v_up = XMQuaternionMultiply(XMLoadFloat3(&start_up_), qr);
 
-            XMFLOAT3 lookf3 = {};
-            XMFLOAT3 upf3 = {};
-            XMStoreFloat3(&lookf3, v_look_at);
-            XMStoreFloat3(&upf3, v_up);
-            camera_.SetOriention(lookf3, upf3);
+                XMFLOAT3 lookf3 = {};
+                XMFLOAT3 upf3 = {};
+                XMStoreFloat3(&lookf3, v_look_at);
+                XMStoreFloat3(&upf3, v_up);
+                camera_.SetOriention(lookf3, upf3);
+            }
         }
 
         camera_.UpdateViewMatrix();
