@@ -60,6 +60,8 @@ public:
 	void Pitch(float angle);
 	void RotateY(float angle);
 
+	void SetOriention(const DirectX::XMFLOAT3& look_at, const DirectX::XMFLOAT3& up);
+
 	// After modifying camera position/orientation, call to rebuild the view matrix.
 	void UpdateViewMatrix();
 

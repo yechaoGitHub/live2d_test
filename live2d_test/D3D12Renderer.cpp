@@ -149,6 +149,7 @@ namespace D3D
         float tick = timer_.DeltaTime();
         HandleInput(tick);
 
+        camera_.UpdateViewMatrix();
 
         auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
         auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
@@ -336,6 +337,8 @@ namespace D3D
     {
         ::SetCapture(window_handle_);
         
+        start_look_at_ = camera_.GetLook3f();
+        start_up_ = camera_.GetUp3f();
         mouse_click_ = true;
         mouse_start_x_ = x;
         mouse_start_y_ = y;
@@ -350,6 +353,8 @@ namespace D3D
     {
         ::ReleaseCapture();
 
+        start_look_at_ = {};
+        start_up_ = {};
         mouse_click_ = false;
         mouse_start_x_ = 0;
         mouse_start_y_ = 0;
@@ -588,44 +593,34 @@ namespace D3D
             {
                 camera_.Float(-distance);
             }
-
-            camera_.UpdateViewMatrix();
         }
 
-        if (mouse_click_) 
+        if (mouse_click_)
         {
+            POINT pt{};
+            ThrowIfFalse(::GetCursorPos(&pt));
+            ThrowIfFalse(::ScreenToClient(window_handle_, &pt));
 
+            float dx = XMConvertToRadians(pt.x - mouse_start_x_);
+            float dy = XMConvertToRadians(pt.y - mouse_start_y_);
+
+            XMFLOAT3 y_axis = { 0.0f, 1.0f, 0.0f };
+            XMFLOAT3 x_axis = { 1.0, 1.0f, 0.0f };
+            auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dx);
+            auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dy);
+
+            auto qr = XMQuaternionMultiply(qx, qy);
+            auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&start_look_at_), qr);
+            auto v_up = XMQuaternionMultiply(XMLoadFloat3(&start_up_), qr);
+
+            XMFLOAT3 lookf3 = {};
+            XMFLOAT3 upf3 = {};
+            XMStoreFloat3(&lookf3, v_look_at);
+            XMStoreFloat3(&upf3, v_up);
+            camera_.SetOriention(lookf3, upf3);
         }
 
-    }
-
-    void D3D12Renderer::UpdateInput(float duration, uint32_t vk_key)
-    {
-        switch (vk_key)
-        {
-            case 'W':
-            {
-                float d = (duration) * camera_move_speed_;
-                camera_.Walk(d);
-                camera_.UpdateViewMatrix();
-            }
-            break;
-
-            case 'A':
-            {
-                float d = (duration) * camera_move_speed_;
-                camera_.Walk(-d);
-                camera_.UpdateViewMatrix();
-            }
-            break;
-
-            case 'S':
-            break;
-
-            case 'D':
-            break;
-        }
-
+        camera_.UpdateViewMatrix();
     }
 
 };

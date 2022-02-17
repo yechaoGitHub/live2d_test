@@ -230,6 +230,19 @@ void Camera::RotateY(float angle)
 	mViewDirty = true;
 }
 
+void Camera::SetOriention(const DirectX::XMFLOAT3& look_at, const DirectX::XMFLOAT3& up)
+{
+	auto v_look = XMVector3Normalize(XMLoadFloat3(&mLook));
+	auto v_r = XMVector3Normalize(XMVector3Cross(XMLoadFloat3(&up), v_look));
+	auto v_up = XMVector3Cross(v_look, v_r);
+
+	XMStoreFloat3(&mLook, v_look);
+	XMStoreFloat3(&mRight, v_r);
+	XMStoreFloat3(&mUp, v_up);
+
+	mViewDirty = true;
+}
+
 void Camera::UpdateViewMatrix()
 {
 	if (mViewDirty)

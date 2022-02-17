@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Windows.h>
+
+#include <exception>
 #include <string>
+#include <sstream>
 
 namespace D3D
 {
@@ -53,6 +56,24 @@ namespace D3D
         HRESULT hr__ = (x);                                               \
         std::wstring wfn = AnsiToWString(__FILE__);                       \
         if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
+    }
+    #endif
+
+    //FunctionName + L" failed in " + Filename + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
+    #ifndef ThrowIfFalse(x)
+    #define ThrowIfFalse(x)                             \
+    {                                                   \
+        bool b = (x);                                   \
+        if (!b)                                         \
+        {                                               \
+            std::stringstream error;                    \
+            error << L#x;                               \
+            error << " failed in ";                     \
+            error << __FILE__;                          \
+            error << "; line ";                         \
+            error << __LINE__;                          \
+            throw std::exception(error.str().c_str());  \
+        }                                               \
     }
     #endif
 };

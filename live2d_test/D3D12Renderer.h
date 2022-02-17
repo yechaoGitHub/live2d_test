@@ -65,7 +65,6 @@ namespace D3D
         void InitLight();
 
         void HandleInput(float duration);
-        void UpdateInput(float duration, uint32_t vk_key);
 
         HWND                                                window_handle_{};
         int                                                 client_width_{};
@@ -118,8 +117,10 @@ namespace D3D
         GameTimer                                           timer_;
 
         bool                                                mouse_click_ = false;
-        uint32_t                                            mouse_start_x_ = 0;
-        uint32_t                                            mouse_start_y_ = 0;
+        int32_t                                             mouse_start_x_ = 0;
+        int32_t                                             mouse_start_y_ = 0;
+        DirectX::XMFLOAT3                                   start_look_at_ = {};
+        DirectX::XMFLOAT3                                   start_up_ = {};
     };
 
 };
