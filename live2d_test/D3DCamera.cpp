@@ -232,7 +232,7 @@ void Camera::RotateY(float angle)
 
 void Camera::SetOriention(const DirectX::XMFLOAT3& look_at, const DirectX::XMFLOAT3& up)
 {
-	auto v_look = XMVector3Normalize(XMLoadFloat3(&mLook));
+	auto v_look = XMVector3Normalize(XMLoadFloat3(&look_at));
 	auto v_r = XMVector3Normalize(XMVector3Cross(XMLoadFloat3(&up), v_look));
 	auto v_up = XMVector3Cross(v_look, v_r);
 
