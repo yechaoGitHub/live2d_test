@@ -386,18 +386,109 @@ namespace D3D
         return texture;
     }
 
-    D3D12Manager::ResourceLayout D3D12Manager::GetCopyableFootprints(ID3D12Resource* res, uint32_t first_resource_index, uint32_t num_resources, uint64_t base_offset)
+    D3D12Manager::ResourceLayout D3D12Manager::GetCopyableFootprints(ID3D12Resource* resource, uint32_t first_resource_index, uint32_t num_resources, uint64_t base_offset)
     {
         ResourceLayout ret;
         ret.fontprints.resize(num_resources);
         ret.num_rows.resize(num_resources);
         ret.row_size_in_bytes.resize(num_resources);
 
-        auto desc = res->GetDesc();
+        auto desc = resource->GetDesc();
         GetDevice()->GetCopyableFootprints(&desc, first_resource_index, num_resources, base_offset, ret.fontprints.data(), ret.num_rows.data(), ret.row_size_in_bytes.data(), &ret.total_byte_size);
 
         return ret;
     }
+
+    //uint64_t D3D12Manager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_lenght)
+    //{
+    //    auto& d3d = D3D12_MANAGER_INSTANCE_;
+    //    auto& buffer_head = d3d.upload_buffer_head_;
+    //    auto& buffer_tail = d3d.Upload_buffer_tail_;
+    //    auto buffer = d3d.upload_buffer_map_data_;
+    //    auto& copy_queue = d3d.upload_layout_queue_;
+    //    auto& task_count = d3d.upload_buffer_task_count_;
+
+    //    if (buffer_head == buffer_tail)
+    //    {
+    //        return 0;
+    //    }
+
+    //    CopyBufferLayout layout;
+    //    layout.type = UPLOAD_BUFFER;
+    //    layout.dest = d3d_dest_resource;
+    //    uint64_t buffer_len = d3d.upload_buffer_->GetDesc().Width;
+    //    if (buffer_tail > buffer_head)
+    //    {
+    //        uint64_t capacity_len = buffer_tail - buffer_head;
+    //        if (capacity_len < copy_lenght)
+    //        {
+    //            return 0;
+    //        }
+
+    //        ::memcpy(buffer + buffer_head, copy_data, copy_lenght);
+    //        layout.buffer_segments.push_back({ buffer_head, copy_lenght });
+    //        buffer_head += copy_lenght;
+
+    //        copy_queue.push_back(std::move(layout));
+    //        task_count++;
+
+    //        return task_count;
+    //    }
+    //    else
+    //    {
+    //        uint64_t capacity_len = buffer_len - buffer_head + buffer_tail;
+    //        if (capacity_len < copy_lenght)
+    //        {
+    //            return 0;
+    //        }
+
+    //        uint64_t head_to_end = buffer_len - buffer_head;
+    //        ::memcpy(buffer + buffer_head, copy_data, head_to_end);
+    //        layout.buffer_segments.push_back({ buffer_head, head_to_end });
+
+    //        copy_lenght -= head_to_end;
+
+    //        uint64_t end_to_head = buffer_tail;
+    //        ::memcpy(buffer, copy_data + head_to_end, copy_lenght);
+    //        layout.buffer_segments.push_back({ 0, copy_lenght });
+
+    //        buffer_head = end_to_head;
+
+    //        copy_queue.push_back(std::move(layout));
+    //        task_count++;
+
+    //        return task_count;
+    //    }
+
+    //    return 0;
+    //}
+
+    //uint64_t D3D12Manager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_data_lenght, const ImageLayout* image_layout, uint32_t image_count, uint32_t subresource_start_index, uint64_t base_offset)
+    //{
+    //    auto& d3d = D3D12_MANAGER_INSTANCE_;
+    //    auto& buffer_head = d3d.upload_buffer_head_;
+    //    auto& buffer_tail = d3d.Upload_buffer_tail_;
+    //    auto buffer = d3d.upload_buffer_map_data_;
+    //    auto& copy_queue = d3d.upload_layout_queue_;
+    //    auto& task_count = d3d.upload_buffer_task_count_;
+
+    //    auto&& layout_info = GetCopyableFootprints(d3d_dest_resource, subresource_start_index, image_count, base_offset);
+
+    //    if (copy_data_lenght < layout_info.total_byte_size)
+    //    {
+    //        return 0;
+    //    }
+
+    //    auto& footprints = layout_info.fontprints;
+    //    for (uint32_t i = 0; i < image_count; i++)
+    //    {
+    //        auto& cur_image_layout = image_layout[i];
+    //        for (uint32_t row = 0; row < cur_image_layout.height; row++)
+    //        {
+    //            ::memcpy(buffer, copy_data, cur_image_layout.row_pitch);
+    //        }
+    //    }
+    //}
 
     D3D12_RASTERIZER_DESC D3D12Manager::DefaultRasterizerDesc()
     {
@@ -483,6 +574,5 @@ namespace D3D
 
         return desc;
     }
-
 };
 

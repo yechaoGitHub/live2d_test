@@ -19,9 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CopyResourceManager.cpp" />
+    <ClCompile Include="CopyTaskRingBuffer.cpp" />
     <ClCompile Include="D3D12Manager.cpp" />
     <ClCompile Include="D3D12Renderer.cpp" />
     <ClCompile Include="D3DCamera.cpp" />
+    <ClCompile Include="D3DEvent.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="GameTimer.cpp" />
@@ -33,9 +36,12 @@
     <ClCompile Include="WICImage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CopyResourceManager.h" />
+    <ClInclude Include="CopyTaskRingBuffer.h" />
     <ClInclude Include="D3D12Manager.h" />
     <ClInclude Include="D3D12Renderer.h" />
     <ClInclude Include="D3DCamera.h" />
+    <ClInclude Include="D3DEvent.h" />
     <ClInclude Include="D3DUtil.h" />
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="GameTimer.h" />

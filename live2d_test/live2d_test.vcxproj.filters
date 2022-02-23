@@ -64,6 +64,15 @@
     <ClCompile Include="GameTimer.cpp">
       <Filter>D3D12Renderer\Util</Filter>
     </ClCompile>
+    <ClCompile Include="CopyResourceManager.cpp">
+      <Filter>D3D12Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyTaskRingBuffer.cpp">
+      <Filter>D3D12Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DEvent.cpp">
+      <Filter>D3D12Manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12Manager.h">
@@ -98,6 +107,15 @@
     </ClInclude>
     <ClInclude Include="GameTimer.h">
       <Filter>D3D12Renderer\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="CopyResourceManager.h">
+      <Filter>D3D12Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="CopyTaskRingBuffer.h">
+      <Filter>D3D12Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DEvent.h">
+      <Filter>D3D12Manager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

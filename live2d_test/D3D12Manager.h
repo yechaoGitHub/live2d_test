@@ -1,10 +1,13 @@
 #pragma once
 
 #include <Windows.h>
+#include <wrl.h>
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include <wrl.h>
 
+#include <atomic>
+#include <deque>
+#include <thread>
 #include <string>
 #include <vector>
 
@@ -74,7 +77,11 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12Resource> CreateTexture(uint32_t width, uint32_t height);
 
-        static ResourceLayout GetCopyableFootprints(ID3D12Resource* res, uint32_t first_resource_index = 0, uint32_t num_resources = 1, uint64_t base_offset = 0);
+        static ResourceLayout GetCopyableFootprints(ID3D12Resource* resource, uint32_t first_resource_index = 0, uint32_t num_resources = 1, uint64_t base_offset = 0);
+
+        //static uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_lenght);
+
+        //static uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_data_lenght, const ImageLayout* image_layout, uint32_t image_count, uint32_t subresource_start_index, uint64_t base_offset);
 
     private:
         D3D12Manager();

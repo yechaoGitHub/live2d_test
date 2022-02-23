@@ -1,10 +1,12 @@
 #pragma once
 
 #include <Windows.h>
+#include <d3d12.h>
 
 #include <exception>
 #include <string>
 #include <sstream>
+
 
 namespace D3D
 {
@@ -27,6 +29,7 @@ namespace D3D
         return (byteSize + 255) & ~255;
     }
 
+    D3D12_RESOURCE_BARRIER TransitionBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after, uint32_t subresource);
 
     inline std::wstring AnsiToWString(const std::string& str)
     {
@@ -59,8 +62,7 @@ namespace D3D
     }
     #endif
 
-    //FunctionName + L" failed in " + Filename + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
-    #ifndef ThrowIfFalse(x)
+    #ifndef ThrowIfFalses
     #define ThrowIfFalse(x)                             \
     {                                                   \
         bool b = (x);                                   \

@@ -7,4 +7,11 @@ struct DirectionalLight
     float intensity;
 };
 
-
+struct OrgePointLight
+{
+    float3 position;
+    float3 color;
+    float k_const;
+    float k_linear;
+    float quadratic;
+};
