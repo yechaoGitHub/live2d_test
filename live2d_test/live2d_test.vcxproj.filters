@@ -26,6 +26,9 @@
     <Filter Include="D3D12Renderer\Util">
       <UniqueIdentifier>{d05be7ef-10f7-4305-a8e5-aceab987f965}</UniqueIdentifier>
     </Filter>
+    <Filter Include="D3D12Manager\CopyResourceManager">
+      <UniqueIdentifier>{e997a4bf-0fe7-4dac-9f18-bd28a24842f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Manager.cpp">
@@ -64,14 +67,14 @@
     <ClCompile Include="GameTimer.cpp">
       <Filter>D3D12Renderer\Util</Filter>
     </ClCompile>
-    <ClCompile Include="CopyResourceManager.cpp">
-      <Filter>D3D12Manager</Filter>
-    </ClCompile>
-    <ClCompile Include="CopyTaskRingBuffer.cpp">
-      <Filter>D3D12Manager</Filter>
-    </ClCompile>
     <ClCompile Include="D3DEvent.cpp">
       <Filter>D3D12Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyResourceManager.cpp">
+      <Filter>D3D12Manager\CopyResourceManager</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyTask.cpp">
+      <Filter>D3D12Manager\CopyResourceManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -108,14 +111,14 @@
     <ClInclude Include="GameTimer.h">
       <Filter>D3D12Renderer\Util</Filter>
     </ClInclude>
-    <ClInclude Include="CopyResourceManager.h">
-      <Filter>D3D12Manager</Filter>
-    </ClInclude>
-    <ClInclude Include="CopyTaskRingBuffer.h">
-      <Filter>D3D12Manager</Filter>
-    </ClInclude>
     <ClInclude Include="D3DEvent.h">
       <Filter>D3D12Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="CopyResourceManager.h">
+      <Filter>D3D12Manager\CopyResourceManager</Filter>
+    </ClInclude>
+    <ClInclude Include="CopyTask.h">
+      <Filter>D3D12Manager\CopyResourceManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

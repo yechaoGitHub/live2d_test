@@ -2,6 +2,8 @@
 #include "D3DUtil.h"
 #include "d3dcompiler.h"
 
+#include <map>
+#include <set>
 
 namespace D3D
 {
@@ -60,6 +62,9 @@ namespace D3D
         }
 
         ThrowIfFailed(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d.d3d_device_)));
+
+        d3d.copy_resource_manager_.Initialize();
+        d3d.copy_resource_manager_.StartUp();
     }
 
     ID3D12Device* D3D12Manager::GetDevice()
@@ -233,6 +238,78 @@ namespace D3D
         return root_signature;
     }
 
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignatureByReflect(uint32_t shader_count, ID3DBlob** shader_arr)
+    {
+        std::set<std::string> const_buffer_names;
+
+        for (uint32_t i = 0; i < shader_count; i++)
+        {
+            ComPtr<ID3D12ShaderReflection> shader_reflect;
+            ThrowIfFailed(D3DReflect(shader_arr[i]->GetBufferPointer(), shader_arr[i]->GetBufferSize(), IID_PPV_ARGS(&shader_reflect)));
+
+            D3D12_SHADER_DESC shader_desc{};
+            ThrowIfFailed(shader_reflect->GetDesc(&shader_desc));
+
+            for (uint32_t b = 0; b < shader_desc.BoundResources; b++)
+            {
+                D3D12_SHADER_INPUT_BIND_DESC bound_desc{};
+                ThrowIfFailed(shader_reflect->GetResourceBindingDesc(b, &bound_desc));
+                switch (bound_desc.Type)
+                {
+                    case D3D_SIT_CBUFFER:
+                    break;
+
+                    case D3D_SIT_TBUFFER:
+                    break;
+
+                    case D3D_SIT_TEXTURE:
+                    break;
+
+                    case D3D_SIT_SAMPLER:
+                    break;
+
+                    case D3D_SIT_UAV_RWTYPED:
+                    break;
+
+                    case D3D_SIT_STRUCTURED:
+                    break;
+
+                    case D3D_SIT_UAV_RWSTRUCTURED:
+                    break;
+
+                    case D3D_SIT_BYTEADDRESS:
+                    break;
+
+                    case D3D_SIT_UAV_RWBYTEADDRESS:
+                    break;
+
+                    case D3D_SIT_UAV_APPEND_STRUCTURED:
+                    break;
+
+                    case D3D_SIT_UAV_CONSUME_STRUCTURED:
+                    break;
+
+                    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+                    break;
+
+                    case D3D_SIT_RTACCELERATIONSTRUCTURE:
+                    break;
+
+                    case D3D_SIT_UAV_FEEDBACKTEXTURE:
+                    break;
+
+                    default:
+                        ThrowIfFalse(0);
+                    break;
+                } 
+
+            }
+
+        }
+
+        return Microsoft::WRL::ComPtr<ID3D12RootSignature>();
+    }
+
     Microsoft::WRL::ComPtr<ID3D12Fence> D3D12Manager::CreateFence(uint64_t value)
     {
         ComPtr<ID3D12Fence> fence;
@@ -399,96 +476,43 @@ namespace D3D
         return ret;
     }
 
-    //uint64_t D3D12Manager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_lenght)
-    //{
-    //    auto& d3d = D3D12_MANAGER_INSTANCE_;
-    //    auto& buffer_head = d3d.upload_buffer_head_;
-    //    auto& buffer_tail = d3d.Upload_buffer_tail_;
-    //    auto buffer = d3d.upload_buffer_map_data_;
-    //    auto& copy_queue = d3d.upload_layout_queue_;
-    //    auto& task_count = d3d.upload_buffer_task_count_;
+    uint64_t D3D12Manager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t dest_offset, void* copy_data, uint64_t copy_lenght)
+    {
+        auto& d3d = D3D12_MANAGER_INSTANCE_;
+        return d3d.copy_resource_manager_.PostUploadBufferTask(d3d_dest_resource, dest_offset, copy_data, copy_lenght);
+    }
 
-    //    if (buffer_head == buffer_tail)
-    //    {
-    //        return 0;
-    //    }
+    uint64_t D3D12Manager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout)
+    {
+        auto& d3d = D3D12_MANAGER_INSTANCE_;
+        return d3d.copy_resource_manager_.PostUploadTextureTask(d3d_dest_resource, first_subresource, subresource_count, copy_data, image_layout);
+    }
 
-    //    CopyBufferLayout layout;
-    //    layout.type = UPLOAD_BUFFER;
-    //    layout.dest = d3d_dest_resource;
-    //    uint64_t buffer_len = d3d.upload_buffer_->GetDesc().Width;
-    //    if (buffer_tail > buffer_head)
-    //    {
-    //        uint64_t capacity_len = buffer_tail - buffer_head;
-    //        if (capacity_len < copy_lenght)
-    //        {
-    //            return 0;
-    //        }
+    uint64_t D3D12Manager::GetCurCopyTaskID()
+    {
+        auto& copy_manager = D3D12_MANAGER_INSTANCE_.copy_resource_manager_;
+        return copy_manager.GetCurTaskID();
+    }
 
-    //        ::memcpy(buffer + buffer_head, copy_data, copy_lenght);
-    //        layout.buffer_segments.push_back({ buffer_head, copy_lenght });
-    //        buffer_head += copy_lenght;
+    uint64_t D3D12Manager::GetCopyExcuteCount()
+    {
+        auto& copy_manager = D3D12_MANAGER_INSTANCE_.copy_resource_manager_;
+        return copy_manager.GetExcuteCount();
+    }
 
-    //        copy_queue.push_back(std::move(layout));
-    //        task_count++;
+    bool D3D12Manager::WaitCopyTask(uint64_t copy_task_id)
+    {
+        auto& copy_manager = D3D12_MANAGER_INSTANCE_.copy_resource_manager_;
 
-    //        return task_count;
-    //    }
-    //    else
-    //    {
-    //        uint64_t capacity_len = buffer_len - buffer_head + buffer_tail;
-    //        if (capacity_len < copy_lenght)
-    //        {
-    //            return 0;
-    //        }
+        ThrowIfFailed(copy_manager.GetCurTaskID() >= copy_task_id);
 
-    //        uint64_t head_to_end = buffer_len - buffer_head;
-    //        ::memcpy(buffer + buffer_head, copy_data, head_to_end);
-    //        layout.buffer_segments.push_back({ buffer_head, head_to_end });
+        while (copy_task_id > copy_manager.GetExcuteCount())
+        {
+            std::this_thread::yield();
+        }
 
-    //        copy_lenght -= head_to_end;
-
-    //        uint64_t end_to_head = buffer_tail;
-    //        ::memcpy(buffer, copy_data + head_to_end, copy_lenght);
-    //        layout.buffer_segments.push_back({ 0, copy_lenght });
-
-    //        buffer_head = end_to_head;
-
-    //        copy_queue.push_back(std::move(layout));
-    //        task_count++;
-
-    //        return task_count;
-    //    }
-
-    //    return 0;
-    //}
-
-    //uint64_t D3D12Manager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_data_lenght, const ImageLayout* image_layout, uint32_t image_count, uint32_t subresource_start_index, uint64_t base_offset)
-    //{
-    //    auto& d3d = D3D12_MANAGER_INSTANCE_;
-    //    auto& buffer_head = d3d.upload_buffer_head_;
-    //    auto& buffer_tail = d3d.Upload_buffer_tail_;
-    //    auto buffer = d3d.upload_buffer_map_data_;
-    //    auto& copy_queue = d3d.upload_layout_queue_;
-    //    auto& task_count = d3d.upload_buffer_task_count_;
-
-    //    auto&& layout_info = GetCopyableFootprints(d3d_dest_resource, subresource_start_index, image_count, base_offset);
-
-    //    if (copy_data_lenght < layout_info.total_byte_size)
-    //    {
-    //        return 0;
-    //    }
-
-    //    auto& footprints = layout_info.fontprints;
-    //    for (uint32_t i = 0; i < image_count; i++)
-    //    {
-    //        auto& cur_image_layout = image_layout[i];
-    //        for (uint32_t row = 0; row < cur_image_layout.height; row++)
-    //        {
-    //            ::memcpy(buffer, copy_data, cur_image_layout.row_pitch);
-    //        }
-    //    }
-    //}
+        return true;
+    }
 
     D3D12_RASTERIZER_DESC D3D12Manager::DefaultRasterizerDesc()
     {

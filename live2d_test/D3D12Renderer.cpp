@@ -8,6 +8,7 @@
 namespace D3D
 {
     using namespace DirectX;
+    using namespace Microsoft::WRL;
 
     GeometryGenerator D3D12Renderer::GEO_GENERATOR_;
 
@@ -52,6 +53,22 @@ namespace D3D
 
         fence_ = D3D12Manager::CreateFence(fence_value_);
 
+        std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
+        input_layout = 
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        };
+
+        D3D12_SHADER_BYTECODE shaders[5] = {};
+        vs_shader_ = D3D12Manager::CompileShader(L"./Shaders/color.hlsl", "VS", "vs_5_0");
+        ps_shader_ = D3D12Manager::CompileShader(L"./Shaders/color.hlsl", "PS", "ps_5_0");
+
+        ID3DBlob* shader_blob[] = { vs_shader_.Get(), ps_shader_ .Get()};
+        D3D12Manager::CreateRootSignatureByReflect(2, shader_blob);
+
         D3D12_DESCRIPTOR_RANGE descriptor_range{};
         descriptor_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
         descriptor_range.NumDescriptors = 1;
@@ -79,22 +96,8 @@ namespace D3D
 
         root_signature_ = D3D12Manager::CreateRootSignature(root_param, _countof(root_param), static_samplers.data(), static_samplers.size());
 
-        std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
-        input_layout = 
-        {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        };
-
-        D3D12_SHADER_BYTECODE shaders[5] = {};
-        vs_shader_ = D3D12Manager::CompileShader(L"./Shaders/color.hlsl", "VS", "vs_5_0");
-        ps_shader_ = D3D12Manager::CompileShader(L"./Shaders/color.hlsl", "PS", "ps_5_0");
-
         shaders[0] = { vs_shader_->GetBufferPointer(), (UINT)vs_shader_->GetBufferSize() };
         shaders[1] = { ps_shader_->GetBufferPointer(), (UINT)ps_shader_->GetBufferSize() };
-
         DXGI_FORMAT rt_format{ DXGI_FORMAT_R8G8B8A8_UNORM };
         pipe_line_state_ = D3D12Manager::CreatePipeLineStateObject({ input_layout.data(), (UINT)input_layout.size() }, root_signature_.Get(), shaders, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, &rt_format, 1, DXGI_FORMAT_D24_UNORM_S8_UINT);
 
@@ -400,69 +403,73 @@ namespace D3D
         uint32_t indices_size = mesh_data_.Indices16.size() * sizeof(uint16_t);
         uint64_t upload_buffer_length = (std::max)(vertices_size, indices_size) * 1.5;
 
-        upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, upload_buffer_length);
         vertex_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_DEFAULT, vertices_size);
         index_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_DEFAULT, indices_size);
 
-        void* upload_map_data{};
-        upload_buffer_->Map(0, nullptr, &upload_map_data);
-        ::memcpy(upload_map_data, mesh_data_.Vertices.data(), vertices_size);
+        D3D12Manager::PostUploadBufferTask(vertex_buffer_.Get(), 0, mesh_data_.Vertices.data(), vertices_size);
 
-        command_list_alloc_->Reset();
-        command_list_->Reset(command_list_alloc_.Get(), nullptr);
+        //void* upload_map_data{};
+        //upload_buffer_->Map(0, nullptr, &upload_map_data);
+        //::memcpy(upload_map_data, mesh_data_.Vertices.data(), vertices_size);
 
-        D3D12_RESOURCE_BARRIER resource_barrier{};
-        resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        resource_barrier.Transition.pResource = vertex_buffer_.Get();
-        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-        resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        //command_list_alloc_->Reset();
+        //command_list_->Reset(command_list_alloc_.Get(), nullptr);
 
-        command_list_->ResourceBarrier(1, &resource_barrier);
-        command_list_->CopyBufferRegion(vertex_buffer_.Get(), 0, upload_buffer_.Get(), 0, vertices_size);
+        //D3D12_RESOURCE_BARRIER resource_barrier{};
+        //resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        //resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        //resource_barrier.Transition.pResource = vertex_buffer_.Get();
+        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        //resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-        command_list_->ResourceBarrier(1, &resource_barrier);
+        //command_list_->ResourceBarrier(1, &resource_barrier);
+        //command_list_->CopyBufferRegion(vertex_buffer_.Get(), 0, upload_buffer_.Get(), 0, vertices_size);
 
-        ThrowIfFailed(command_list_->Close());
+        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+        //command_list_->ResourceBarrier(1, &resource_barrier);
 
-        ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
-        command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+        //ThrowIfFailed(command_list_->Close());
 
-        FlushCommandQueue();
+        //ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
+        //command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+        //FlushCommandQueue();
 
         vertex_buffer_view_.BufferLocation = vertex_buffer_->GetGPUVirtualAddress();
         vertex_buffer_view_.SizeInBytes = vertices_size;
         vertex_buffer_view_.StrideInBytes = sizeof(GeometryGenerator::Vertex);
 
-        ::memcpy(upload_map_data, mesh_data_.Indices16.data(), indices_size);
+        auto last_copy_id = D3D12Manager::PostUploadBufferTask(index_buffer_.Get(), 0, mesh_data_.Indices16.data(), vertices_size);
 
-        command_list_alloc_->Reset();
-        command_list_->Reset(command_list_alloc_.Get(), nullptr);
+        //::memcpy(upload_map_data, mesh_data_.Indices16.data(), indices_size);
 
-        resource_barrier.Transition.pResource = index_buffer_.Get();
-        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-        command_list_->ResourceBarrier(1, &resource_barrier);
-        command_list_->CopyBufferRegion(index_buffer_.Get(), 0, upload_buffer_.Get(), 0, indices_size);
+        //command_list_alloc_->Reset();
+        //command_list_->Reset(command_list_alloc_.Get(), nullptr);
 
-        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-        command_list_->ResourceBarrier(1, &resource_barrier);
+        //resource_barrier.Transition.pResource = index_buffer_.Get();
+        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        //command_list_->ResourceBarrier(1, &resource_barrier);
+        //command_list_->CopyBufferRegion(index_buffer_.Get(), 0, upload_buffer_.Get(), 0, indices_size);
 
-        ThrowIfFailed(command_list_->Close());
+        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+        //command_list_->ResourceBarrier(1, &resource_barrier);
 
-        cmdsLists[0] = { command_list_.Get() };
-        command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+        //ThrowIfFailed(command_list_->Close());
 
-        FlushCommandQueue();
+        //cmdsLists[0] = { command_list_.Get() };
+        //command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+        //FlushCommandQueue();
 
         index_buffer_view_.BufferLocation = index_buffer_->GetGPUVirtualAddress();
         index_buffer_view_.Format = DXGI_FORMAT_R16_UINT;
         index_buffer_view_.SizeInBytes = indices_size;
 
+        D3D12Manager::WaitCopyTask(last_copy_id);
     }
 
     void D3D12Renderer::InitImageResource()
@@ -476,8 +483,6 @@ namespace D3D
 
         auto resource_layout = D3D12Manager::GetCopyableFootprints(texture_.Get());
         
-        upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, resource_layout.total_byte_size * 1.5);
-
         uint32_t ppb{};
         WICImage::GetImagePixelFormatInfo(image_resource_.Get())->GetBitsPerPixel(&ppb);
 
@@ -486,48 +491,59 @@ namespace D3D
 
         uint32_t img_row_pitch = (img_width * ppb + 7u) / 8u;
 
-        void* map_data{};
-        upload_buffer_->Map(0, nullptr, &map_data);
-        image_resource_->CopyPixels(nullptr, img_row_pitch, img_row_pitch * img_height, reinterpret_cast<BYTE*>(map_data));
-        upload_buffer_->Unmap(0, nullptr);
+        ComPtr<IWICBitmap> bmp;
+        ThrowIfFailed(image_resource_.As(&bmp));
+        ComPtr<IWICBitmapLock> bmp_lock;
+        ThrowIfFailed(bmp->Lock(nullptr, WICBitmapLockRead, &bmp_lock));
 
+        UINT buffer_size{};
+        UINT stride{};
+        BYTE* pv = NULL;
+        ThrowIfFailed(bmp_lock->GetStride(&stride));
+        ThrowIfFailed(bmp_lock->GetDataPointer(&buffer_size, &pv));
        
-        command_list_alloc_->Reset();
-        command_list_->Reset(command_list_alloc_.Get(), nullptr);
+        ImageLayout layout;
+        layout.width = img_width;
+        layout.height = img_height;
+        layout.row_pitch = img_row_pitch;
+        auto last_copy_id = D3D12Manager::PostUploadTextureTask(texture_.Get(), 0, 1, pv, &layout);
+
+        //command_list_alloc_->Reset();
+        //command_list_->Reset(command_list_alloc_.Get(), nullptr);
 
 
-        D3D12_RESOURCE_BARRIER resource_barrier{};
-        resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        resource_barrier.Transition.pResource = texture_.Get();
-        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-        resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        //D3D12_RESOURCE_BARRIER resource_barrier{};
+        //resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        //resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        //resource_barrier.Transition.pResource = texture_.Get();
+        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        //resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-        command_list_->ResourceBarrier(1, &resource_barrier);
+        //command_list_->ResourceBarrier(1, &resource_barrier);
 
-        D3D12_TEXTURE_COPY_LOCATION copy_src{};
-        copy_src.pResource = upload_buffer_.Get();
-        copy_src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-        copy_src.PlacedFootprint = resource_layout.fontprints[0];
+        //D3D12_TEXTURE_COPY_LOCATION copy_src{};
+        //copy_src.pResource = upload_buffer_.Get();
+        //copy_src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        //copy_src.PlacedFootprint = resource_layout.fontprints[0];
 
-        D3D12_TEXTURE_COPY_LOCATION copy_dest{};
-        copy_dest.pResource = texture_.Get();
-        copy_dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-        copy_dest.SubresourceIndex = 0;
+        //D3D12_TEXTURE_COPY_LOCATION copy_dest{};
+        //copy_dest.pResource = texture_.Get();
+        //copy_dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        //copy_dest.SubresourceIndex = 0;
 
-        command_list_->CopyTextureRegion(&copy_dest, 0, 0, 0, &copy_src, nullptr);
+        //command_list_->CopyTextureRegion(&copy_dest, 0, 0, 0, &copy_src, nullptr);
 
-        resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-        command_list_->ResourceBarrier(1, &resource_barrier);
+        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+        //command_list_->ResourceBarrier(1, &resource_barrier);
 
-        ThrowIfFailed(command_list_->Close());
+        //ThrowIfFailed(command_list_->Close());
 
-        ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
-        command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+        //ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
+        //command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-        FlushCommandQueue();
+        //FlushCommandQueue();
 
         tex_heap_ = D3D12Manager::CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 
@@ -539,6 +555,8 @@ namespace D3D
         srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
         srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
         D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, tex_heap_->GetCPUDescriptorHandleForHeapStart());
+
+        D3D12Manager::WaitCopyTask(last_copy_id);
     }
 
     void D3D12Renderer::InitLight()

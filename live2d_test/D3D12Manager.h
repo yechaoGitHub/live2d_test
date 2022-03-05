@@ -11,13 +11,10 @@
 #include <string>
 #include <vector>
 
-#pragma comment(lib,"d3dcompiler.lib")
-#pragma comment(lib, "D3D12.lib")
-#pragma comment(lib, "dxgi.lib")
+#include "CopyResourceManager.h"
 
 namespace D3D
 {
-    //to do 添加一个默认的上传，下载资源的辅助渲染队列
     class D3D12Manager
     {
     public:
@@ -65,6 +62,8 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(const D3D12_ROOT_PARAMETER* root_param_arr, int count, const D3D12_STATIC_SAMPLER_DESC* static_sampler = nullptr, uint32_t sampler_count = 0);
 
+        static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignatureByReflect(uint32_t shader_count, ID3DBlob** shader_arr);
+
         static Microsoft::WRL::ComPtr<ID3D12Fence> CreateFence(uint64_t value);
 
         static Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& file_path, const std::string &entry_point, const std::string &target);
@@ -79,14 +78,18 @@ namespace D3D
 
         static ResourceLayout GetCopyableFootprints(ID3D12Resource* resource, uint32_t first_resource_index = 0, uint32_t num_resources = 1, uint64_t base_offset = 0);
 
-        //static uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_lenght);
+        static uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t dest_offset, void* copy_data, uint64_t copy_lenght);
 
-        //static uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint8_t* copy_data, uint64_t copy_data_lenght, const ImageLayout* image_layout, uint32_t image_count, uint32_t subresource_start_index, uint64_t base_offset);
+        static uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout);
+
+        static uint64_t GetCurCopyTaskID();
+
+        static uint64_t GetCopyExcuteCount();
+
+        static bool WaitCopyTask(uint64_t copy_task_id);
 
     private:
         D3D12Manager();
-
-        static D3D12Manager D3D12_MANAGER_INSTANCE_;
 
         static D3D12_RASTERIZER_DESC DefaultRasterizerDesc();
         static D3D12_BLEND_DESC DefaultBlendDesc();
@@ -94,6 +97,9 @@ namespace D3D
         static D3D12_DEPTH_STENCIL_DESC DefaultDepthStencilDesc();
         static D3D12_DEPTH_STENCILOP_DESC DefaultDepthStencilopDesc();
 
+        static D3D12Manager D3D12_MANAGER_INSTANCE_;
+
+        CopyResourceManager                                 copy_resource_manager_;
         Microsoft::WRL::ComPtr<IDXGIFactory4>               dxgi_factory_;
         Microsoft::WRL::ComPtr<ID3D12Device>                d3d_device_;
     };

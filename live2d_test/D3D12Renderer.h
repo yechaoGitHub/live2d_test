@@ -90,7 +90,6 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12Resource>              vertex_buffer_;
         D3D12_INDEX_BUFFER_VIEW                             index_buffer_view_{};
         Microsoft::WRL::ComPtr<ID3D12Resource>              index_buffer_;
-        Microsoft::WRL::ComPtr<ID3D12Resource>              upload_buffer_;
         Microsoft::WRL::ComPtr<ID3D12Resource>              const_buffer_;
 
         static GeometryGenerator                            GEO_GENERATOR_;

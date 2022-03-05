@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CopyResourceManager.cpp" />
-    <ClCompile Include="CopyTaskRingBuffer.cpp" />
+    <ClCompile Include="CopyTask.cpp" />
     <ClCompile Include="D3D12Manager.cpp" />
     <ClCompile Include="D3D12Renderer.cpp" />
     <ClCompile Include="D3DCamera.cpp" />
@@ -37,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CopyResourceManager.h" />
-    <ClInclude Include="CopyTaskRingBuffer.h" />
+    <ClInclude Include="CopyTask.h" />
     <ClInclude Include="D3D12Manager.h" />
     <ClInclude Include="D3D12Renderer.h" />
     <ClInclude Include="D3DCamera.h" />
@@ -161,7 +161,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2d.lib;DirectXTK12.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2d.lib;DirectXTK12.lib;d3dcompiler.lib;D3D12.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

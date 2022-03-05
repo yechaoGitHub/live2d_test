@@ -18,7 +18,7 @@ cbuffer LightConstBuffer : register(b1)
 };
 
 StructuredBuffer<DirectionalLight> DIRECTIONAL_LIGHT_BUFFER : register(t0);
-StructuredBuffer<OrgePointLight> DIRECTIONAL_LIGHT_BUFFER : register(t1);
+StructuredBuffer<OrgePointLight> POINT_LIGHT_BUFFER : register(t1);
 
 Texture2D gDiffuseMap : register(t2);
 SamplerState gsamLinear : register(s0);
