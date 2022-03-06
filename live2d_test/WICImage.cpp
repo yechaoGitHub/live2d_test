@@ -6,14 +6,14 @@ namespace D3D
 
     WICImage WICImage::WIC_IMAGE_INSTANCE_;
 
-    WICImage::WICImage() 
+    WICImage::WICImage()
     {
 
     }
 
     WICImage::~WICImage()
     {
-    
+
     }
 
     void WICImage::Initialize()
@@ -60,7 +60,7 @@ namespace D3D
         {
             return source_img;
         }
-        
+
         ComPtr<IWICFormatConverter> converter;
         ThrowIfFailed(WIC_IMAGE_INSTANCE_.wic_factory_->CreateFormatConverter(&converter));
 
@@ -69,6 +69,14 @@ namespace D3D
         ComPtr<IWICBitmapSource> ret;
         ThrowIfFailed(converter.As(&ret));
 
+        return ret;
+    }
+
+    Microsoft::WRL::ComPtr<IWICBitmap> WICImage::CreateBmpFormSource(IWICBitmapSource* source)
+    {
+        auto& instance = WIC_IMAGE_INSTANCE_;
+        ComPtr<IWICBitmap> ret;
+        ThrowIfFailed(instance.wic_factory_->CreateBitmapFromSource(source, WICBitmapCacheOnDemand, &ret));
         return ret;
     }
 

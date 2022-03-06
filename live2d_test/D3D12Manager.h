@@ -5,10 +5,12 @@
 #include <d3d12.h>
 #include <dxgi1_4.h>
 
+#include <array>
 #include <atomic>
 #include <deque>
-#include <thread>
+#include <limits>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "CopyResourceManager.h"
@@ -28,7 +30,7 @@ namespace D3D
 
     public:
         ~D3D12Manager();
-   
+
         static const D3D12Manager& GetManager();
 
         static void Initialize();
@@ -52,9 +54,9 @@ namespace D3D
         static Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CreateCommandList(D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator* allocator);
 
         static Microsoft::WRL::ComPtr<ID3D12PipelineState> CreatePipeLineStateObject(
-            D3D12_INPUT_LAYOUT_DESC input_desc, 
-            ID3D12RootSignature* root_signature, 
-            D3D12_SHADER_BYTECODE shaders[5], 
+            D3D12_INPUT_LAYOUT_DESC input_desc,
+            ID3D12RootSignature* root_signature,
+            D3D12_SHADER_BYTECODE shaders[5],
             D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology_type,
             DXGI_FORMAT rtv_formats[8],
             int rtv_num,
@@ -62,7 +64,9 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(const D3D12_ROOT_PARAMETER* root_param_arr, int count, const D3D12_STATIC_SAMPLER_DESC* static_sampler = nullptr, uint32_t sampler_count = 0);
 
-        static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignatureByReflect(uint32_t shader_count, ID3DBlob** shader_arr);
+        static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetDefaultStaticSamplers(uint32_t base_register = 0);
+
+        static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count);
 
         static Microsoft::WRL::ComPtr<ID3D12Fence> CreateFence(uint64_t value);
 
@@ -89,7 +93,16 @@ namespace D3D
         static bool WaitCopyTask(uint64_t copy_task_id);
 
     private:
+        struct DescriptorTableBindPointDesc
+        {
+            uint32_t    max_bind_point = 0;
+            uint32_t    min_bind_point = (std::numeric_limits<uint32_t>::max)();
+            uint32_t    count = 0;
+        };
+
         D3D12Manager();
+
+        static std::string GetShaderResourceIdentify(const std::string& raw_name);
 
         static D3D12_RASTERIZER_DESC DefaultRasterizerDesc();
         static D3D12_BLEND_DESC DefaultBlendDesc();

@@ -7,7 +7,7 @@
 
 #include "D3DUtil.h"
 
-namespace D3D 
+namespace D3D
 {
     class WICImage
     {
@@ -19,8 +19,10 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> LoadImageFormFile(const std::wstring& file_path);
         static Microsoft::WRL::ComPtr<IWICBitmapSource> CovertToD3DPixelFormat(IWICBitmapSource* source_img);
+        static Microsoft::WRL::ComPtr<IWICBitmap> CreateBmpFormSource(IWICBitmapSource* source);
         static Microsoft::WRL::ComPtr<IWICComponentInfo> GetImageComponenInfo(IWICBitmapSource* img);
         static Microsoft::WRL::ComPtr<IWICPixelFormatInfo> GetImagePixelFormatInfo(IWICBitmapSource* img);
+
 
         static WICPixelFormatGUID GetD3DPixelFormat();
 

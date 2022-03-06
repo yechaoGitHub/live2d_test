@@ -3,7 +3,9 @@
 #include "d3dcompiler.h"
 
 #include <map>
+#include <regex>
 #include <set>
+
 
 namespace D3D
 {
@@ -13,6 +15,20 @@ namespace D3D
 
     D3D12Manager::D3D12Manager()
     {
+    }
+
+    std::string D3D12Manager::GetShaderResourceIdentify(const std::string& raw_name)
+    {
+        static std::regex id_reg("(\\w+)");
+        std::smatch m;
+        if (std::regex_search(raw_name, m, id_reg))
+        {
+            return m[0].str();
+        }
+        else
+        {
+            return "";
+        }
     }
 
     D3D12Manager::~D3D12Manager()
@@ -28,7 +44,7 @@ namespace D3D
     {
         auto& d3d = D3D12_MANAGER_INSTANCE_;
 
-#if defined(DEBUG) || defined(_DEBUG) 
+#if defined(DEBUG) || defined(_DEBUG)
         // Enable the D3D12 debug layer.
         {
             ComPtr<ID3D12Debug> debugController;
@@ -40,8 +56,8 @@ namespace D3D
         ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&d3d.dxgi_factory_)));
 
         ComPtr<IDXGIAdapter1> adapter;
-        for (int adapter_index = 0; 
-            DXGI_ERROR_NOT_FOUND != d3d.dxgi_factory_->EnumAdapters1(adapter_index, &adapter); 
+        for (int adapter_index = 0;
+            DXGI_ERROR_NOT_FOUND != d3d.dxgi_factory_->EnumAdapters1(adapter_index, &adapter);
             ++adapter_index)
         {
             DXGI_ADAPTER_DESC1 desc;
@@ -52,7 +68,7 @@ namespace D3D
                 // Don't select the Basic Render Driver adapter.
                 continue;
             }
-            
+
             // Check to see if the adapter supports Direct3D 12, but don't create the
             // actual device yet.
             if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
@@ -73,11 +89,11 @@ namespace D3D
     }
 
     HWND D3D12Manager::CreateD3DWindow(
-        const wchar_t* wnd_title, 
-        DWORD wnd_style, 
-        int wnd_x, 
-        int wnd_y, 
-        int wnd_width, 
+        const wchar_t* wnd_title,
+        DWORD wnd_style,
+        int wnd_x,
+        int wnd_y,
+        int wnd_width,
         int wnd_height)
     {
         WNDCLASS wc;
@@ -101,11 +117,11 @@ namespace D3D
         auto handle = CreateWindow(
             L"live2D test window",
             wnd_title,
-            wnd_style, 
+            wnd_style,
             wnd_x,
             wnd_y,
             wnd_width,
-            wnd_height, 
+            wnd_height,
             0, 0, 0, 0);
 
         if (!handle)
@@ -174,11 +190,11 @@ namespace D3D
     }
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> D3D12Manager::CreatePipeLineStateObject(
-        D3D12_INPUT_LAYOUT_DESC input_desc, 
-        ID3D12RootSignature* root_signature, 
-        D3D12_SHADER_BYTECODE shaders[5], 
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology_type, 
-        DXGI_FORMAT rtv_formats[8], 
+        D3D12_INPUT_LAYOUT_DESC input_desc,
+        ID3D12RootSignature* root_signature,
+        D3D12_SHADER_BYTECODE shaders[5],
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology_type,
+        DXGI_FORMAT rtv_formats[8],
         int rtv_num,
         DXGI_FORMAT dsv_format)
     {
@@ -238,9 +254,11 @@ namespace D3D
         return root_signature;
     }
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignatureByReflect(uint32_t shader_count, ID3DBlob** shader_arr)
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count)
     {
-        std::set<std::string> const_buffer_names;
+
+        std::set<std::string> ids;
+        DescriptorTableBindPointDesc arr_bind_point_desc[4];
 
         for (uint32_t i = 0; i < shader_count; i++)
         {
@@ -254,24 +272,36 @@ namespace D3D
             {
                 D3D12_SHADER_INPUT_BIND_DESC bound_desc{};
                 ThrowIfFailed(shader_reflect->GetResourceBindingDesc(b, &bound_desc));
+
+                auto id = GetShaderResourceIdentify(bound_desc.Name);
+                if (id.empty() || ids.find(bound_desc.Name) != ids.end())
+                {
+                    continue;
+                }
+
+                ids.insert(id);
+
+                DescriptorTableBindPointDesc* ptr_bind_point_desc{};
+
                 switch (bound_desc.Type)
                 {
                     case D3D_SIT_CBUFFER:
+                        ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_CBV];
                     break;
 
                     case D3D_SIT_TBUFFER:
                     break;
 
                     case D3D_SIT_TEXTURE:
+                    case D3D_SIT_STRUCTURED:
+                        ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_SRV];
                     break;
 
                     case D3D_SIT_SAMPLER:
+                        ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
                     break;
 
                     case D3D_SIT_UAV_RWTYPED:
-                    break;
-
-                    case D3D_SIT_STRUCTURED:
                     break;
 
                     case D3D_SIT_UAV_RWSTRUCTURED:
@@ -301,14 +331,174 @@ namespace D3D
                     default:
                         ThrowIfFalse(0);
                     break;
-                } 
+                }
 
+                if (ptr_bind_point_desc)
+                {
+                    auto& bind_point = bound_desc.BindPoint;
+                    ptr_bind_point_desc->max_bind_point = (std::max)(ptr_bind_point_desc->max_bind_point, bind_point);
+                    ptr_bind_point_desc->min_bind_point = (std::min)(ptr_bind_point_desc->min_bind_point, bind_point);
+                    ptr_bind_point_desc->count++;
+                }
             }
-
         }
 
-        return Microsoft::WRL::ComPtr<ID3D12RootSignature>();
+        std::vector<D3D12_DESCRIPTOR_RANGE> vec_descriptor_range;
+        D3D12_DESCRIPTOR_RANGE sampler_range{};
+        for (uint32_t i = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; i <= D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER; i++)
+        {
+            auto& bind_point_desc = arr_bind_point_desc[i];
+            if (bind_point_desc.count == 0)
+            {
+                continue;
+            }
+
+            if (i == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
+            {
+                sampler_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+                sampler_range.NumDescriptors = bind_point_desc.max_bind_point - bind_point_desc.min_bind_point + 1;
+                sampler_range.BaseShaderRegister = bind_point_desc.min_bind_point;
+                sampler_range.RegisterSpace = 0;
+                sampler_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            }
+            else
+            {
+                D3D12_DESCRIPTOR_RANGE descriptor_range{};
+                descriptor_range.RangeType = static_cast<D3D12_DESCRIPTOR_RANGE_TYPE>(i);
+                descriptor_range.NumDescriptors = bind_point_desc.max_bind_point - bind_point_desc.min_bind_point + 1;
+                descriptor_range.BaseShaderRegister = bind_point_desc.min_bind_point;
+                descriptor_range.RegisterSpace = 0;
+                descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+                vec_descriptor_range.push_back(descriptor_range);
+            }
+        }
+
+        D3D12_ROOT_PARAMETER root_param[2] = {};
+        uint32_t root_param_count{};
+        root_param[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        root_param[0].DescriptorTable.NumDescriptorRanges = vec_descriptor_range.size();
+        root_param[0].DescriptorTable.pDescriptorRanges = vec_descriptor_range.data();
+        root_param[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        root_param_count++;
+        if (sampler_range.NumDescriptors > 0)
+        {
+            root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            root_param[1].DescriptorTable.NumDescriptorRanges = 1;
+            root_param[1].DescriptorTable.pDescriptorRanges = &sampler_range;
+            root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+            root_param_count++;
+        }
+
+        auto static_samplers = GetDefaultStaticSamplers();
+
+        return CreateRootSignature(root_param, root_param_count, static_samplers.data(), static_samplers.size());
     }
+
+    std::array<const D3D12_STATIC_SAMPLER_DESC, 6> D3D12Manager::GetDefaultStaticSamplers(uint32_t base_register)
+    {
+        const D3D12_STATIC_SAMPLER_DESC pointWrap =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_POINT,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            0 + base_register
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC pointClamp =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_POINT,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            1 + base_register
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC linearWrap =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            2 + base_register
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC linearClamp =
+        {
+            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            0.0f,
+            16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            3 + base_register
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC anisotropicWrap =
+        {
+            D3D12_FILTER_ANISOTROPIC,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            0.0f,
+            8,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            4 + base_register
+        };
+
+        const D3D12_STATIC_SAMPLER_DESC anisotropicClamp =
+        {
+            D3D12_FILTER_ANISOTROPIC,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            0.0f,
+            8,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+            0.0f,
+            D3D12_FLOAT32_MAX,
+            D3D12_SHADER_VISIBILITY_ALL,
+            5 + base_register
+        };
+
+        return {
+            pointWrap, pointClamp,
+            linearWrap, linearClamp,
+            anisotropicWrap, anisotropicClamp };
+    }
+
 
     Microsoft::WRL::ComPtr<ID3D12Fence> D3D12Manager::CreateFence(uint64_t value)
     {
@@ -320,7 +510,7 @@ namespace D3D
     Microsoft::WRL::ComPtr<ID3DBlob> D3D12Manager::CompileShader(const std::wstring& file_path, const std::string& entry_point, const std::string& target)
     {
         UINT compileFlags = 0;
-#if defined(DEBUG) || defined(_DEBUG)  
+#if defined(DEBUG) || defined(_DEBUG)
         compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
@@ -343,7 +533,7 @@ namespace D3D
         desc.Type = type;
         desc.Flags = flag;
         desc.NodeMask = 0;
-        
+
         ComPtr<ID3D12DescriptorHeap> heap;
         GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap));
 
@@ -516,9 +706,9 @@ namespace D3D
 
     D3D12_RASTERIZER_DESC D3D12Manager::DefaultRasterizerDesc()
     {
-        static D3D12_RASTERIZER_DESC desc = 
-        {  
-            D3D12_FILL_MODE_SOLID, 
+        static D3D12_RASTERIZER_DESC desc =
+        {
+            D3D12_FILL_MODE_SOLID,
             D3D12_CULL_MODE_BACK,
             false,
             D3D12_DEFAULT_DEPTH_BIAS,
@@ -528,7 +718,7 @@ namespace D3D
             false,
             false,
             0,
-            D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF 
+            D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
         };
 
         return desc;
@@ -536,7 +726,7 @@ namespace D3D
 
     D3D12_BLEND_DESC D3D12Manager::DefaultBlendDesc()
     {
-        static D3D12_BLEND_DESC desc = 
+        static D3D12_BLEND_DESC desc =
         {
             false,
             false,
@@ -571,7 +761,7 @@ namespace D3D
 
     D3D12_DEPTH_STENCIL_DESC D3D12Manager::DefaultDepthStencilDesc()
     {
-        static D3D12_DEPTH_STENCIL_DESC desc = 
+        static D3D12_DEPTH_STENCIL_DESC desc =
         {
             true,
             D3D12_DEPTH_WRITE_MASK_ALL,
@@ -590,9 +780,9 @@ namespace D3D
     {
         static D3D12_DEPTH_STENCILOP_DESC desc =
         {
-            D3D12_STENCIL_OP_KEEP, 
-            D3D12_STENCIL_OP_KEEP, 
-            D3D12_STENCIL_OP_KEEP, 
+            D3D12_STENCIL_OP_KEEP,
+            D3D12_STENCIL_OP_KEEP,
+            D3D12_STENCIL_OP_KEEP,
             D3D12_COMPARISON_FUNC_ALWAYS
         };
 

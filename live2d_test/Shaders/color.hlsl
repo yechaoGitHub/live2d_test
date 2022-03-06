@@ -21,7 +21,8 @@ StructuredBuffer<DirectionalLight> DIRECTIONAL_LIGHT_BUFFER : register(t0);
 StructuredBuffer<OrgePointLight> POINT_LIGHT_BUFFER : register(t1);
 
 Texture2D gDiffuseMap : register(t2);
-SamplerState gsamLinear : register(s0);
+SamplerState default_sampler[6] : register(s0);
+SamplerState gsamLinear : register(s6);
 
 struct VertexIn
 {
@@ -42,12 +43,12 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
-	
+
     vout.PosW = mul(float4(vin.PosL, 1.0f), MODEL_MAT).xyz;
     vout.NormalW = mul(vin.NormalL, (float3x3) MODEL_MAT);
     vout.PosH = mul(float4(vout.PosW, 1.0f), VIEW_PROJ_MAT);
     vout.TexC = mul(float4(vin.TexC, 0.0f, 1.0f), TEX_TRANSFORM);
-	
+
     return vout;
 }
 
@@ -60,7 +61,7 @@ float4 PS(VertexOut pin) : SV_Target
         float dir_coe = dot(pin.NormalW, normalize(DIRECTIONAL_LIGHT_BUFFER[i].direction));
         color += color * dir_coe * DIRECTIONAL_LIGHT_BUFFER[i].intensity;
     }
-    
+
     return color;
 }
 

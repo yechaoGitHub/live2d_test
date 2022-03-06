@@ -2,7 +2,7 @@
 
 #include <d3d12.h>
 
-#include <functional> 
+#include <functional>
 #include <stdint.h>
 #include <vector>
 
@@ -20,7 +20,7 @@ namespace D3D
     class CopyTask
     {
     public:
-        enum TaskType 
+        enum TaskType
         {
             UPLOAD_BUFFER,
             UPLOAD_TEXTURE,
@@ -68,7 +68,7 @@ namespace D3D
     };
 
 
-    struct UploadTextureSubresourceTask 
+    struct UploadTextureSubresourceTask
     {
         uint32_t dest_x = 0;
         uint32_t dest_y = 0;
@@ -78,7 +78,7 @@ namespace D3D
         D3D12_BOX src_box;
     };
 
-    class UploadTextureTask : public CopyTask 
+    class UploadTextureTask : public CopyTask
     {
     public:
         UploadTextureTask();
@@ -90,7 +90,7 @@ namespace D3D
         void* src_data = nullptr;
 
         uint32_t first_subresource = 0;
-        std::vector<UploadTextureSubresourceTask> subresource_task;
+        std::vector<UploadTextureSubresourceTask> subresource_tasks;
 
         ID3D12Resource* upload_resource = nullptr;
         void* upload_resource_map_data = nullptr;

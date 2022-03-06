@@ -20,6 +20,6 @@ namespace D3D
 
     void D3DEvent::Wait()
     {
-        ThrowIfFalse(::WaitForSingleObject(event_, INFINITE) != WAIT_OBJECT_0);
+        ThrowIfFalse(::WaitForSingleObject(event_, INFINITE) == WAIT_OBJECT_0);
     }
 };

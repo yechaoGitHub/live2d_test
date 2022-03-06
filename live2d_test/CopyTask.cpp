@@ -30,12 +30,12 @@ namespace D3D
 
     void CopyTask::ExcuteCallback()
     {
-        if (call_back_) 
+        if (call_back_)
         {
             call_back_(this);
         }
     }
-              
+
     UploadBufferTask::UploadBufferTask() :
         CopyTask(UPLOAD_BUFFER)
     {
@@ -68,12 +68,12 @@ namespace D3D
 
     void UploadTextureTask::ExcuteCopyTask(ID3D12GraphicsCommandList* command)
     {
-        auto resource_layout = D3D12Manager::GetCopyableFootprints(dest_res, first_subresource, subresource_task.size());
+        auto resource_layout = D3D12Manager::GetCopyableFootprints(dest_res, first_subresource, subresource_tasks.size());
 
-        for (uint32_t i = 0; i < subresource_task.size(); i++)
-        {   
+        for (uint32_t i = 0; i < subresource_tasks.size(); i++)
+        {
             auto& footprint = resource_layout.fontprints[i];
-            auto& image_layout = subresource_task[i].src_image_layout;
+            auto& image_layout = subresource_tasks[i].src_image_layout;
             auto copy_height = (std::min)(footprint.Footprint.Height, image_layout.height);
             auto copy_width = (std::min)(footprint.Footprint.Width, image_layout.width);
 
@@ -87,9 +87,9 @@ namespace D3D
 
         auto before_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, 0);
         auto after_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON, 0);
-            
+
         command->ResourceBarrier(1, &before_barrier);
-        
+
         uint32_t count{};
         for (auto& layout : resource_layout.fontprints)
         {
@@ -100,14 +100,14 @@ namespace D3D
 
             D3D12_TEXTURE_COPY_LOCATION dest_copy_location{};
             dest_copy_location.pResource = dest_res;
-            src_copy_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-            src_copy_location.SubresourceIndex = first_subresource + count;
+            dest_copy_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+            dest_copy_location.SubresourceIndex = first_subresource + count;
 
             command->CopyTextureRegion(&dest_copy_location, 0, 0, 0, &src_copy_location, nullptr);
 
             count++;
         }
-        
+
         command->ResourceBarrier(1, &after_barrier);
     }
 

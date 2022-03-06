@@ -29,8 +29,6 @@ namespace D3D
         void Update();
         void Render();
 
-        static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
-
         virtual void OnMouseDown(uint8_t btn, uint32_t x, uint32_t y);
         virtual void OnMouseMove(uint32_t x, uint32_t y);
         virtual void OnMouseUp(uint8_t btn, uint32_t x, uint32_t y);

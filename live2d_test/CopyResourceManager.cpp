@@ -1,6 +1,6 @@
 #include "CopyResourceManager.h"
 
-#include "D3D12Manager.h" 
+#include "D3D12Manager.h"
 
 namespace D3D
 {
@@ -22,6 +22,8 @@ namespace D3D
 
         upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, DEFAULT_UPLOAD_BUFFER_SIZE_);
         upload_buffer_->Map(0, nullptr, reinterpret_cast<void**>(&upload_buffer_map_data_));
+
+        copy_command_list_->Close();
     }
 
     void CopyResourceManager::StartUp()
@@ -70,11 +72,14 @@ namespace D3D
         task->dest_res = d3d_dest_resource;
         task->src_data = copy_data;
         task->first_subresource = first_subresource;
+        task->upload_resource = upload_buffer_.Get();
+        task->upload_resource_map_data = upload_buffer_map_data_;
 
         for (uint32_t i = 0; i < subresource_count; i++)
         {
             UploadTextureSubresourceTask subresource_task;
             subresource_task.src_image_layout = image_layout[i];
+            task->subresource_tasks.push_back(subresource_task);
         }
 
         uint64_t ret{};
@@ -106,7 +111,7 @@ namespace D3D
 
         {
             std::lock_guard<std::mutex> guard(task_queue_lock_);
-            if (!task_queue_.empty()) 
+            if (!task_queue_.empty())
             {
                 task = task_queue_.front();
                 task_queue_.pop_front();
@@ -126,16 +131,16 @@ namespace D3D
         while (running_)
         {
             auto task = PopTask();
-            if (task) 
+            if (task)
             {
-                copy_command_allocator_->Reset();
-                copy_command_list_->Reset(copy_command_allocator_.Get(), nullptr);
+                ThrowIfFailed(copy_command_allocator_->Reset());
+                ThrowIfFailed(copy_command_list_->Reset(copy_command_allocator_.Get(), nullptr));
                 task->ExcuteCopyTask(copy_command_list_.Get());
-                copy_command_list_->Close();
+                ThrowIfFailed(copy_command_list_->Close());
 
                 FlushCommandQueue();
             }
-            else 
+            else
             {
                 event_.Wait();
             }
