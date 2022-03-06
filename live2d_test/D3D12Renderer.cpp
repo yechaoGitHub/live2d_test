@@ -69,33 +69,6 @@ namespace D3D
         ID3DBlob* shader_blob[] = { vs_shader_.Get(), ps_shader_ .Get()};
         root_signature_ = D3D12Manager::CreateRootSignatureByReflect(shader_blob, 2);
 
-        //D3D12_DESCRIPTOR_RANGE descriptor_range{};
-        //descriptor_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        //descriptor_range.NumDescriptors = 1;
-        //descriptor_range.BaseShaderRegister = 0;
-        //descriptor_range.RegisterSpace = 0;
-        //descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-        //D3D12_ROOT_PARAMETER root_param[3] = {};
-        //root_param[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        //root_param[0].DescriptorTable.NumDescriptorRanges = 1;
-        //root_param[0].DescriptorTable.pDescriptorRanges = &descriptor_range;
-        //root_param[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        //root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-        //root_param[1].Descriptor.ShaderRegister = 0;
-        //root_param[1].Descriptor.RegisterSpace = 0;
-        //root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        //root_param[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-        //root_param[2].Descriptor.ShaderRegister = 1;
-        //root_param[2].Descriptor.RegisterSpace = 0;
-        //root_param[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        //auto static_samplers = GetStaticSamplers();
-
-        /*root_signature_ = D3D12Manager::CreateRootSignature(root_param, _countof(root_param), static_samplers.data(), static_samplers.size());*/
-
         shaders[0] = { vs_shader_->GetBufferPointer(), (UINT)vs_shader_->GetBufferSize() };
         shaders[1] = { ps_shader_->GetBufferPointer(), (UINT)ps_shader_->GetBufferSize() };
         DXGI_FORMAT rt_format{ DXGI_FORMAT_R8G8B8A8_UNORM };
@@ -132,14 +105,14 @@ namespace D3D
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
-        cbv_heap_ = D3D12Manager::CreateDescriptorHeap(10, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+        srv_heap_ = D3D12Manager::CreateDescriptorHeap(10, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 
         D3D12_CONSTANT_BUFFER_VIEW_DESC const_buff_view{};
         const_buff_view.BufferLocation = const_buffer_->GetGPUVirtualAddress();
         const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof ObjectConstants);
 
-        DescriptorHeap dx_cbv_heap(cbv_heap_.Get());
-        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(0));
+        DescriptorHeap dx_cbv_heap(srv_heap_.Get());
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(1));
 
         model_.SetOriention({ 0.5f, 0.5f, 0.0f });
 
@@ -217,11 +190,9 @@ namespace D3D
 
         command_list_->SetGraphicsRootSignature(root_signature_.Get());
 
-        ID3D12DescriptorHeap* heap[] = { cbv_heap_.Get() };
-        command_list_->SetDescriptorHeaps(1, heap);
-        command_list_->SetGraphicsRootDescriptorTable(0, cbv_heap_->GetGPUDescriptorHandleForHeapStart());
-        //command_list_->SetGraphicsRootConstantBufferView(1, const_buffer_->GetGPUVirtualAddress());
-        //command_list_->SetGraphicsRootConstantBufferView(2, light_buffer_resource_->GetGPUVirtualAddress());
+        ID3D12DescriptorHeap* heap[] = { srv_heap_.Get(),  };
+        command_list_->SetDescriptorHeaps(_countof(heap), heap);
+        command_list_->SetGraphicsRootDescriptorTable(0, srv_heap_->GetGPUDescriptorHandleForHeapStart());
 
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
 
@@ -313,62 +284,11 @@ namespace D3D
 
         D3D12Manager::PostUploadBufferTask(vertex_buffer_.Get(), 0, mesh_data_.Vertices.data(), vertices_size);
 
-        //void* upload_map_data{};
-        //upload_buffer_->Map(0, nullptr, &upload_map_data);
-        //::memcpy(upload_map_data, mesh_data_.Vertices.data(), vertices_size);
-
-        //command_list_alloc_->Reset();
-        //command_list_->Reset(command_list_alloc_.Get(), nullptr);
-
-        //D3D12_RESOURCE_BARRIER resource_barrier{};
-        //resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        //resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        //resource_barrier.Transition.pResource = vertex_buffer_.Get();
-        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-        //resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-        //command_list_->ResourceBarrier(1, &resource_barrier);
-        //command_list_->CopyBufferRegion(vertex_buffer_.Get(), 0, upload_buffer_.Get(), 0, vertices_size);
-
-        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-        //command_list_->ResourceBarrier(1, &resource_barrier);
-
-        //ThrowIfFailed(command_list_->Close());
-
-        //ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
-        //command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-        //FlushCommandQueue();
-
         vertex_buffer_view_.BufferLocation = vertex_buffer_->GetGPUVirtualAddress();
         vertex_buffer_view_.SizeInBytes = vertices_size;
         vertex_buffer_view_.StrideInBytes = sizeof(GeometryGenerator::Vertex);
 
         auto last_copy_id = D3D12Manager::PostUploadBufferTask(index_buffer_.Get(), 0, mesh_data_.Indices16.data(), indices_size);
-
-        //::memcpy(upload_map_data, mesh_data_.Indices16.data(), indices_size);
-
-        //command_list_alloc_->Reset();
-        //command_list_->Reset(command_list_alloc_.Get(), nullptr);
-
-        //resource_barrier.Transition.pResource = index_buffer_.Get();
-        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-        //command_list_->ResourceBarrier(1, &resource_barrier);
-        //command_list_->CopyBufferRegion(index_buffer_.Get(), 0, upload_buffer_.Get(), 0, indices_size);
-
-        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-        //command_list_->ResourceBarrier(1, &resource_barrier);
-
-        //ThrowIfFailed(command_list_->Close());
-
-        //cmdsLists[0] = { command_list_.Get() };
-        //command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-        //FlushCommandQueue();
 
         index_buffer_view_.BufferLocation = index_buffer_->GetGPUVirtualAddress();
         index_buffer_view_.Format = DXGI_FORMAT_R16_UINT;
@@ -395,6 +315,7 @@ namespace D3D
         image_resource_->GetSize(&img_width, &img_height);
 
         uint32_t img_row_pitch = (img_width * ppb + 7u) / 8u;
+        img_width *= ppb / 8u;
 
         auto bmp = WICImage::CreateBmpFormSource(image_resource_.Get());
         ComPtr<IWICBitmapLock> bmp_lock;
@@ -412,45 +333,6 @@ namespace D3D
         layout.row_pitch = img_row_pitch;
         auto last_copy_id = D3D12Manager::PostUploadTextureTask(texture_.Get(), 0, 1, pv, &layout);
 
-        //command_list_alloc_->Reset();
-        //command_list_->Reset(command_list_alloc_.Get(), nullptr);
-
-
-        //D3D12_RESOURCE_BARRIER resource_barrier{};
-        //resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        //resource_barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        //resource_barrier.Transition.pResource = texture_.Get();
-        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-        //resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-        //command_list_->ResourceBarrier(1, &resource_barrier);
-
-        //D3D12_TEXTURE_COPY_LOCATION copy_src{};
-        //copy_src.pResource = upload_buffer_.Get();
-        //copy_src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-        //copy_src.PlacedFootprint = resource_layout.fontprints[0];
-
-        //D3D12_TEXTURE_COPY_LOCATION copy_dest{};
-        //copy_dest.pResource = texture_.Get();
-        //copy_dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-        //copy_dest.SubresourceIndex = 0;
-
-        //command_list_->CopyTextureRegion(&copy_dest, 0, 0, 0, &copy_src, nullptr);
-
-        //resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        //resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-        //command_list_->ResourceBarrier(1, &resource_barrier);
-
-        //ThrowIfFailed(command_list_->Close());
-
-        //ID3D12CommandList* cmdsLists[] = { command_list_.Get() };
-        //command_queue_->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-        //FlushCommandQueue();
-
-        tex_heap_ = D3D12Manager::CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
         D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
         srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         srv_desc.Format = texture_->GetDesc().Format;
@@ -458,7 +340,9 @@ namespace D3D
         srv_desc.Texture2D.MostDetailedMip = 0;
         srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
         srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
-        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, tex_heap_->GetCPUDescriptorHandleForHeapStart());
+
+        DescriptorHeap dx_cbv_heap(srv_heap_.Get());
+        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(0));
 
         D3D12Manager::WaitCopyTask(last_copy_id);
     }

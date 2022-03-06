@@ -381,14 +381,14 @@ namespace D3D
         root_param[0].DescriptorTable.pDescriptorRanges = vec_descriptor_range.data();
         root_param[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
         root_param_count++;
-        /*if (sampler_range.NumDescriptors > 0)
-        {
-            root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-            root_param[1].DescriptorTable.NumDescriptorRanges = 1;
-            root_param[1].DescriptorTable.pDescriptorRanges = &sampler_range;
-            root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-            root_param_count++;
-        }*/
+        //if (sampler_range.NumDescriptors > 0)
+        //{
+        //    root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        //    root_param[1].DescriptorTable.NumDescriptorRanges = 1;
+        //    root_param[1].DescriptorTable.pDescriptorRanges = &sampler_range;
+        //    root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        //    root_param_count++;
+        //}
 
         auto static_samplers = GetDefaultStaticSamplers();
 

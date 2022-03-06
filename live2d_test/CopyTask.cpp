@@ -75,7 +75,7 @@ namespace D3D
             auto& footprint = resource_layout.fontprints[i];
             auto& image_layout = subresource_tasks[i].src_image_layout;
             auto copy_height = (std::min)(footprint.Footprint.Height, image_layout.height);
-            auto copy_width = (std::min)(footprint.Footprint.Width, image_layout.width);
+            auto copy_width = (std::min)(footprint.Footprint.RowPitch, image_layout.width);
 
             for (uint32_t row = 0; row < copy_height; row++)
             {

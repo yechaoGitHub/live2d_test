@@ -22,7 +22,7 @@ StructuredBuffer<OrgePointLight> POINT_LIGHT_BUFFER : register(t1);
 
 Texture2D gDiffuseMap : register(t2);
 SamplerState default_sampler[6] : register(s0);
-SamplerState gsamLinear : register(s6);
+//SamplerState gsamLinear : register(s6);
 
 struct VertexIn
 {
@@ -54,7 +54,7 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    //float4 color = gDiffuseMap.Sample(gsamLinear, pin.TexC);
+    float4 color = gDiffuseMap.Sample(default_sampler[0], pin.TexC);
 
     //for (uint i = 0; i < DIRECTIONAL_LIGHT_NUM; i++)
     //{
@@ -62,7 +62,7 @@ float4 PS(VertexOut pin) : SV_Target
     //    color += color * dir_coe * DIRECTIONAL_LIGHT_BUFFER[i].intensity;
     //}
 
-    return float4(1.0, 0.0, 0.0f, 1.0f);
+    return color;
 }
 
 

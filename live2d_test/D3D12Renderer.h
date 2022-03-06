@@ -76,10 +76,9 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12PipelineState>         pipe_line_state_;
         Microsoft::WRL::ComPtr<ID3D12Fence>                 fence_;
 
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        cbv_heap_;
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        srv_heap_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        rtv_heap_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        dsv_heap_;
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        tex_heap_;
 
         Microsoft::WRL::ComPtr<ID3D12Resource>              back_target_buffer_[2];
         Microsoft::WRL::ComPtr<ID3D12Resource>              depth_stencil_buffer_;
