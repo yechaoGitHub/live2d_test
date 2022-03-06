@@ -132,6 +132,15 @@ namespace D3D
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
+        cbv_heap_ = D3D12Manager::CreateDescriptorHeap(10, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC const_buff_view{};
+        const_buff_view.BufferLocation = const_buffer_->GetGPUVirtualAddress();
+        const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof ObjectConstants);
+
+        DescriptorHeap dx_cbv_heap(cbv_heap_.Get());
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(0));
+
         model_.SetOriention({ 0.5f, 0.5f, 0.0f });
 
         timer_.Start();
@@ -208,11 +217,11 @@ namespace D3D
 
         command_list_->SetGraphicsRootSignature(root_signature_.Get());
 
-        ID3D12DescriptorHeap* heap[] = { tex_heap_.Get() };
+        ID3D12DescriptorHeap* heap[] = { cbv_heap_.Get() };
         command_list_->SetDescriptorHeaps(1, heap);
-        command_list_->SetGraphicsRootDescriptorTable(0, tex_heap_->GetGPUDescriptorHandleForHeapStart());
-        command_list_->SetGraphicsRootConstantBufferView(1, const_buffer_->GetGPUVirtualAddress());
-        command_list_->SetGraphicsRootConstantBufferView(2, light_buffer_resource_->GetGPUVirtualAddress());
+        command_list_->SetGraphicsRootDescriptorTable(0, cbv_heap_->GetGPUDescriptorHandleForHeapStart());
+        //command_list_->SetGraphicsRootConstantBufferView(1, const_buffer_->GetGPUVirtualAddress());
+        //command_list_->SetGraphicsRootConstantBufferView(2, light_buffer_resource_->GetGPUVirtualAddress());
 
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
 
