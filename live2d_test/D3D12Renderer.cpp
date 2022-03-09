@@ -100,19 +100,12 @@ namespace D3D
         scissor_rect_ = { 0, 0, client_width_, client_height_ };
 
         camera_.SetLens(0.25f * XM_PI, AspectRatio(), 1.0f, 1000.0f);
-        camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -10.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
+        camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -100.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
         camera_.UpdateViewMatrix();
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
         srv_heap_ = D3D12Manager::CreateDescriptorHeap(10, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
-        D3D12_CONSTANT_BUFFER_VIEW_DESC const_buff_view{};
-        const_buff_view.BufferLocation = const_buffer_->GetGPUVirtualAddress();
-        const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof ObjectConstants);
-
-        DescriptorHeap dx_cbv_heap(srv_heap_.Get());
-        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(1));
 
         model_.SetOriention({ 0.5f, 0.5f, 0.0f });
 
@@ -121,6 +114,7 @@ namespace D3D
         InitVertexIndexBuffer();
         InitImageResource();
         InitLight();
+        InitResourceBinding();
     }
 
     void D3D12Renderer::ClearUp()
@@ -218,9 +212,10 @@ namespace D3D
 
         start_look_at_ = camera_.GetLook3f();
         start_up_ = camera_.GetUp3f();
+        start_right_ = camera_.GetRight3f();
         mouse_click_ = true;
-        mouse_start_x_ = x;
-        mouse_start_y_ = y;
+        mouse_cur_x_ = x;
+        mouse_cur_y_ = y;
     }
 
     void D3D12Renderer::OnMouseMove(uint32_t x, uint32_t y)
@@ -235,8 +230,8 @@ namespace D3D
         start_look_at_ = {};
         start_up_ = {};
         mouse_click_ = false;
-        mouse_start_x_ = 0;
-        mouse_start_y_ = 0;
+        mouse_cur_x_ = 0;
+        mouse_cur_y_ = 0;
     }
 
     void D3D12Renderer::OnKeyDown(uint32_t key)
@@ -333,6 +328,44 @@ namespace D3D
         layout.row_pitch = img_row_pitch;
         auto last_copy_id = D3D12Manager::PostUploadTextureTask(texture_.Get(), 0, 1, pv, &layout);
 
+        D3D12Manager::WaitCopyTask(last_copy_id);
+    }
+
+    void D3D12Renderer::InitLight()
+    {
+        auto buffer_size = CalcConstantBufferByteSize(sizeof(LightConstBuffer));
+        const_light_gpu_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, buffer_size);
+
+        LightConstBuffer* light_const_ptr{};
+        const_light_gpu_buffer_->Map(0, nullptr, reinterpret_cast<void**>(&light_const_ptr));
+        light_const_ptr->directional_light_num = 1;
+        light_const_ptr->point_light_num = 0;
+        const_light_gpu_buffer_->Unmap(0, nullptr);
+
+        directional_light_gpu_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, sizeof DirectionalLight);
+
+        DirectionalLight* map_ptr{};
+        directional_light_gpu_buffer_->Map(0, nullptr, reinterpret_cast<void**>(&map_ptr));
+        map_ptr->intensity = 1.0f;
+        map_ptr->direction = { 1.0, 0.0, 0.0 };
+        map_ptr->color = { 1.0f, 0.0f, 0.0f };
+
+    }
+
+    void D3D12Renderer::InitResourceBinding()
+    {
+        DescriptorHeap dx_cbv_heap(srv_heap_.Get());
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC dir_light_desc{};
+        dir_light_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        dir_light_desc.Format = DXGI_FORMAT_UNKNOWN;
+        dir_light_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        dir_light_desc.Buffer.FirstElement = 0;
+        dir_light_desc.Buffer.NumElements = 1;
+        dir_light_desc.Buffer.StructureByteStride = sizeof(DirectionalLight);
+        dir_light_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+        D3D12Manager::GetDevice()->CreateShaderResourceView(directional_light_gpu_buffer_.Get(), &dir_light_desc, dx_cbv_heap.GetCpuHandle(0));
+
         D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
         srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         srv_desc.Format = texture_->GetDesc().Format;
@@ -340,29 +373,16 @@ namespace D3D
         srv_desc.Texture2D.MostDetailedMip = 0;
         srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
         srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
+        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(2));
 
-        DescriptorHeap dx_cbv_heap(srv_heap_.Get());
-        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(0));
+        D3D12_CONSTANT_BUFFER_VIEW_DESC const_buff_view{};
+        const_buff_view.BufferLocation = const_buffer_->GetGPUVirtualAddress();
+        const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof ObjectConstants);
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(3));
 
-        D3D12Manager::WaitCopyTask(last_copy_id);
-    }
-
-    void D3D12Renderer::InitLight()
-    {
-        auto buffer_size = CalcConstantBufferByteSize(sizeof(LightConstBuffer) + (MAX_LIGHT_NUM_ - 1) * sizeof(DirectionalLight));
-
-        light_buffer_resource_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, buffer_size);
-
-        dir_light_.direction = { 1.0f, -1.0f, 1.0f };
-        dir_light_.color = { 1.0f, 1.0f, 0.0f };
-        dir_light_.intensity = 1.0f;
-
-        LightConstBuffer* light_const_ptr{};
-        light_buffer_resource_->Map(0, nullptr, reinterpret_cast<void**>(&light_const_ptr));
-        light_const_ptr->light_nums = 1;
-        light_const_ptr->dir_light_arr[0] = dir_light_;
-        light_buffer_resource_->Unmap(0, nullptr);
-
+        const_buff_view.BufferLocation = const_light_gpu_buffer_->GetGPUVirtualAddress();
+        const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof LightConstBuffer);
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(4));
     }
 
     void D3D12Renderer::HandleInput(float duration)
@@ -407,27 +427,31 @@ namespace D3D
             ThrowIfFalse(::GetCursorPos(&pt));
             ThrowIfFalse(::ScreenToClient(window_handle_, &pt));
 
-            auto dx = pt.x - mouse_start_x_;
-            auto dy = pt.y - mouse_start_y_;
+            auto dx = pt.x - mouse_cur_x_;
+            auto dy = pt.y - mouse_cur_y_;
             if (dx != 0 || dy != 0)
             {
                 float dxf = XMConvertToRadians(dx);
                 float dyf = XMConvertToRadians(dy);
 
-                XMFLOAT3 y_axis = { 0.0f, 1.0f, 0.0f };
-                XMFLOAT3 x_axis = { 1.0, 1.0f, 0.0f };
+                auto x_axis = camera_.GetRight3f();
+                auto y_axis = camera_.GetUp3f();
                 auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dxf);
                 auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dyf);
 
+                auto look_at = camera_.GetLook3f();
                 auto qr = XMQuaternionMultiply(qx, qy);
-                auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&start_look_at_), qr);
-                auto v_up = XMQuaternionMultiply(XMLoadFloat3(&start_up_), qr);
+                auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&look_at), qr);
+                auto v_up = XMQuaternionMultiply(XMLoadFloat3(&y_axis), qr);
 
                 XMFLOAT3 lookf3 = {};
                 XMFLOAT3 upf3 = {};
                 XMStoreFloat3(&lookf3, v_look_at);
                 XMStoreFloat3(&upf3, v_up);
                 camera_.SetOriention(lookf3, upf3);
+
+                mouse_cur_x_ = pt.x;
+                mouse_cur_y_ = pt.y;
             }
         }
 

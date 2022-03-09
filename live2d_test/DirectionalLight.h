@@ -10,9 +10,9 @@ namespace D3D
     class DirectionalLight
     {
     public:
-        STRUCT_ALIGN_16 DirectX::XMFLOAT3 direction = {};
-        STRUCT_ALIGN_16 DirectX::XMFLOAT3 color = {};
-        float intensity = 0.0f;
+        float intensity = {};
+        DirectX::XMFLOAT3 direction = {};
+        DirectX::XMFLOAT3 color = {};
     };
 #pragma pack(pop)
 };

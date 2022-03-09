@@ -31,9 +31,9 @@ int main(int argc, char** argv)
 
     SDL_Event windows_event;
     bool quit{ false };
-    while (!quit) 
+    while (!quit)
     {
-        if (SDL_PollEvent(&windows_event)) 
+        if (SDL_PollEvent(&windows_event))
         {
             switch (windows_event.type)
             {
@@ -65,14 +65,14 @@ int main(int argc, char** argv)
                 break;
             }
         }
-        else 
+        else
         {
             renderer.Update();
             renderer.Render();
         }
     }
-                 
-    SDL_DestroyWindow(window);                              
+
+    SDL_DestroyWindow(window);
     SDL_Quit();
 
     renderer.ClearUp();

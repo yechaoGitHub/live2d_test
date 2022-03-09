@@ -51,8 +51,8 @@ namespace D3D
 
         struct LightConstBuffer
         {
-            STRUCT_ALIGN_16 uint32_t light_nums = 0;
-            STRUCT_ALIGN_16 DirectionalLight dir_light_arr[1];
+            uint32_t directional_light_num;
+            uint32_t point_light_num;
         };
 #pragma pack(pop)
 
@@ -61,6 +61,7 @@ namespace D3D
         void InitVertexIndexBuffer();
         void InitImageResource();
         void InitLight();
+        void InitResourceBinding();
 
         void HandleInput(float duration);
 
@@ -90,6 +91,12 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12Resource>              index_buffer_;
         Microsoft::WRL::ComPtr<ID3D12Resource>              const_buffer_;
 
+        LightConstBuffer                                    const_light_buffer_;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              const_light_gpu_buffer_;
+
+        DirectionalLight                                    dir_light_;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              directional_light_gpu_buffer_;
+
         static GeometryGenerator                            GEO_GENERATOR_;
         GeometryGenerator::MeshData                         mesh_data_;
 
@@ -100,24 +107,17 @@ namespace D3D
         D3D12_RECT                                          scissor_rect_{};
 
         Camera                                              camera_;
-        float                                               camera_move_speed_ = 1.0f;
-
+        float                                               camera_move_speed_ = 10.0f;
         Microsoft::WRL::ComPtr<IWICBitmapSource>            image_resource_;
-
-        static const uint32_t                               MAX_LIGHT_NUM_ = 10;
-        Microsoft::WRL::ComPtr<ID3D12Resource>              light_buffer_resource_;
-        LightConstBuffer                                    light_const_buffer_;
-        DirectionalLight                                    dir_light_;
-
         Model                                               model_;
-
         GameTimer                                           timer_;
 
         bool                                                mouse_click_ = false;
-        int32_t                                             mouse_start_x_ = 0;
-        int32_t                                             mouse_start_y_ = 0;
+        int32_t                                             mouse_cur_x_ = 0;
+        int32_t                                             mouse_cur_y_ = 0;
         DirectX::XMFLOAT3                                   start_look_at_ = {};
         DirectX::XMFLOAT3                                   start_up_ = {};
+        DirectX::XMFLOAT3                                   start_right_ = {};
     };
 
 };

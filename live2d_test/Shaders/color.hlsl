@@ -1,6 +1,6 @@
 #include "light.hlsi"
 
-cbuffer cbPerObject : register(b0)
+cbuffer VS_MatrixBuffer : register(b0)
 {
     float4x4 LOCAL_MAT;         //本地空间矩阵，缩放，旋转，平移
     float4x4 WORLD_MAT;         //世界空间矩阵，主要用来转换到世界坐标
@@ -54,15 +54,16 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    float4 color = gDiffuseMap.Sample(default_sampler[0], pin.TexC);
+    float3 text_color = gDiffuseMap.Sample(default_sampler[1], pin.TexC);
+    float3 out_color = float4(0.0, 0.0, 0.0, 1.0);
+    for (uint i = 0; i < DIRECTIONAL_LIGHT_NUM; i++)
+    {
+        float dir_coe = dot(pin.NormalW, normalize(-DIRECTIONAL_LIGHT_BUFFER[i].direction));
+        float3 dir_color = DIRECTIONAL_LIGHT_BUFFER[i].color * DIRECTIONAL_LIGHT_BUFFER[i].intensity * dir_coe;
+        out_color += text_color * dir_color;
+    }
 
-    //for (uint i = 0; i < DIRECTIONAL_LIGHT_NUM; i++)
-    //{
-    //    float dir_coe = dot(pin.NormalW, normalize(DIRECTIONAL_LIGHT_BUFFER[i].direction));
-    //    color += color * dir_coe * DIRECTIONAL_LIGHT_BUFFER[i].intensity;
-    //}
-
-    return color;
+    return float4(out_color, 1.0f);
 }
 
 

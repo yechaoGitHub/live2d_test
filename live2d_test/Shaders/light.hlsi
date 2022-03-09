@@ -1,10 +1,8 @@
-#define MAX_LIGHT_NUM 10
-
 struct DirectionalLight
 {
+    float intensity;
     float3 direction;
     float3 color;
-    float intensity;
 };
 
 struct OrgePointLight

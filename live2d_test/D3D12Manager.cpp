@@ -397,7 +397,7 @@ namespace D3D
 
     std::array<const D3D12_STATIC_SAMPLER_DESC, 6> D3D12Manager::GetDefaultStaticSamplers(uint32_t base_register)
     {
-        const D3D12_STATIC_SAMPLER_DESC pointWrap =
+        const D3D12_STATIC_SAMPLER_DESC point_wrap =
         {
             D3D12_FILTER_MIN_MAG_MIP_POINT,
             D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -409,11 +409,12 @@ namespace D3D
             D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
             0.0f,
             D3D12_FLOAT32_MAX,
-            D3D12_SHADER_VISIBILITY_ALL,
-            0 + base_register
+            0 + base_register,
+            0,
+            D3D12_SHADER_VISIBILITY_ALL
         };
 
-        const D3D12_STATIC_SAMPLER_DESC pointClamp =
+        const D3D12_STATIC_SAMPLER_DESC point_clamp =
         {
             D3D12_FILTER_MIN_MAG_MIP_POINT,
             D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
@@ -425,11 +426,12 @@ namespace D3D
             D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
             0.0f,
             D3D12_FLOAT32_MAX,
-            D3D12_SHADER_VISIBILITY_ALL,
-            1 + base_register
+            1 + base_register,
+            0,
+            D3D12_SHADER_VISIBILITY_ALL
         };
 
-        const D3D12_STATIC_SAMPLER_DESC linearWrap =
+        const D3D12_STATIC_SAMPLER_DESC linear_wrap =
         {
             D3D12_FILTER_MIN_MAG_MIP_LINEAR,
             D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -441,11 +443,12 @@ namespace D3D
             D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
             0.0f,
             D3D12_FLOAT32_MAX,
-            D3D12_SHADER_VISIBILITY_ALL,
-            2 + base_register
+            2 + base_register,
+            0,
+            D3D12_SHADER_VISIBILITY_ALL
         };
 
-        const D3D12_STATIC_SAMPLER_DESC linearClamp =
+        const D3D12_STATIC_SAMPLER_DESC linear_clamp =
         {
             D3D12_FILTER_MIN_MAG_MIP_LINEAR,
             D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
@@ -457,11 +460,12 @@ namespace D3D
             D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
             0.0f,
             D3D12_FLOAT32_MAX,
-            D3D12_SHADER_VISIBILITY_ALL,
-            3 + base_register
+            3 + base_register,
+            0,
+            D3D12_SHADER_VISIBILITY_ALL
         };
 
-        const D3D12_STATIC_SAMPLER_DESC anisotropicWrap =
+        const D3D12_STATIC_SAMPLER_DESC anisotropic_wrap =
         {
             D3D12_FILTER_ANISOTROPIC,
             D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -473,11 +477,12 @@ namespace D3D
             D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
             0.0f,
             D3D12_FLOAT32_MAX,
-            D3D12_SHADER_VISIBILITY_ALL,
-            4 + base_register
+            4 + base_register,
+            0,
+            D3D12_SHADER_VISIBILITY_ALL
         };
 
-        const D3D12_STATIC_SAMPLER_DESC anisotropicClamp =
+        const D3D12_STATIC_SAMPLER_DESC anisotropic_clamp =
         {
             D3D12_FILTER_ANISOTROPIC,
             D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
@@ -489,14 +494,15 @@ namespace D3D
             D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
             0.0f,
             D3D12_FLOAT32_MAX,
-            D3D12_SHADER_VISIBILITY_ALL,
-            5 + base_register
+            5 + base_register,
+            0,
+            D3D12_SHADER_VISIBILITY_ALL
         };
 
         return {
-            pointWrap, pointClamp,
-            linearWrap, linearClamp,
-            anisotropicWrap, anisotropicClamp };
+            point_wrap, point_clamp,
+            linear_wrap, linear_clamp,
+            anisotropic_wrap, anisotropic_clamp };
     }
 
 
