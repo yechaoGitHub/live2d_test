@@ -301,8 +301,6 @@ namespace D3D
         image_resource_->GetSize(&width, &height);
         texture_ = D3D12Manager::CreateTexture(width, height);
 
-        auto resource_layout = D3D12Manager::GetCopyableFootprints(texture_.Get());
-
         uint32_t ppb{};
         WICImage::GetImagePixelFormatInfo(image_resource_.Get())->GetBitsPerPixel(&ppb);
 

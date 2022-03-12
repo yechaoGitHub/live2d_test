@@ -24,8 +24,8 @@ namespace D3D
         void StartUp();
         void ShutDown();
 
-        uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t offset, void* copy_data, uint64_t copy_length);
-        uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource,  uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout);
+        uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t offset, void* copy_data, uint64_t copy_length, D3D12_RESOURCE_STATES res_state_before = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES res_state_after = D3D12_RESOURCE_STATE_COMMON);
+        uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource,  uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout, D3D12_RESOURCE_STATES res_state_before = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES res_state_after = D3D12_RESOURCE_STATE_COMMON);
 
         uint64_t GetCurTaskID();
         uint64_t GetExcuteCount();

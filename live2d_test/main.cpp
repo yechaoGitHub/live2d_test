@@ -6,7 +6,7 @@
 #include "D3D12Manager.h"
 #include "D3D12Renderer.h"
 #include "WICImage.h"
-
+#include "ImGuiProxy.h"
 
 SDL_Window*     window{};
 SDL_Renderer*   renderer{};
@@ -23,6 +23,7 @@ int main(int argc, char** argv)
 
     D3D::D3D12Manager::Initialize();
     D3D::WICImage::Initialize();
+    D3D::ImGuiProxy::Initialize();
 
     hwnd = D3D::D3D12Manager::CreateD3DWindow(L"live2d", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600);
     window = SDL_CreateWindowFrom(hwnd);

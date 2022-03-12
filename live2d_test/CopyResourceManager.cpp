@@ -15,9 +15,9 @@ namespace D3D
 
     void CopyResourceManager::Initialize()
     {
-        copy_command_allocator_ = D3D12Manager::CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY);
-        copy_command_list_ = D3D12Manager::CreateCommandList(D3D12_COMMAND_LIST_TYPE_COPY, copy_command_allocator_.Get());
-        copy_command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_FLAG_NONE);
+        copy_command_allocator_ = D3D12Manager::CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT);
+        copy_command_list_ = D3D12Manager::CreateCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, copy_command_allocator_.Get());
+        copy_command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_FLAG_NONE);
         copy_fence_ = D3D12Manager::CreateFence(exec_task_id_);
 
         upload_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, DEFAULT_UPLOAD_BUFFER_SIZE_);
@@ -41,11 +41,12 @@ namespace D3D
         copy_resource_thread_.join();
     }
 
-    uint64_t CopyResourceManager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t offset, void* copy_data, uint64_t copy_length)
+    uint64_t CopyResourceManager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t offset, void* copy_data, uint64_t copy_length, D3D12_RESOURCE_STATES res_state_before, D3D12_RESOURCE_STATES res_state_after)
     {
         UploadBufferTask* task = new UploadBufferTask();
-
         task->dest_res = d3d_dest_resource;
+        task->res_state_before = res_state_before;
+        task->res_state_after = res_state_after;
         task->dest_offset = offset;
         task->src_data = copy_data;
         task->length = copy_length;
@@ -65,11 +66,12 @@ namespace D3D
         return assign_task_id_;
     }
 
-    uint64_t CopyResourceManager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout)
+    uint64_t CopyResourceManager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout, D3D12_RESOURCE_STATES res_state_before, D3D12_RESOURCE_STATES res_state_after)
     {
         UploadTextureTask* task = new UploadTextureTask();
-
         task->dest_res = d3d_dest_resource;
+        task->res_state_before = res_state_before;
+        task->res_state_after = res_state_after;
         task->src_data = copy_data;
         task->first_subresource = first_subresource;
         task->upload_resource = upload_buffer_.Get();

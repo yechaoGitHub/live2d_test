@@ -59,6 +59,8 @@ namespace D3D
         void ExcuteCopyTask(ID3D12GraphicsCommandList* command) override;
 
         ID3D12Resource* dest_res = nullptr;
+        D3D12_RESOURCE_STATES res_state_before = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_STATES res_state_after = D3D12_RESOURCE_STATE_COMMON;
         uint64_t dest_offset = 0;
         void* src_data = nullptr;
         uint64_t length = 0;
@@ -87,6 +89,8 @@ namespace D3D
         void ExcuteCopyTask(ID3D12GraphicsCommandList* command) override;
 
         ID3D12Resource* dest_res = nullptr;
+        D3D12_RESOURCE_STATES res_state_before = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_STATES res_state_after = D3D12_RESOURCE_STATE_COMMON;
         void* src_data = nullptr;
 
         uint32_t first_subresource = 0;

@@ -236,7 +236,7 @@ namespace D3D
 
         ComPtr<ID3DBlob> serializedRootSig = nullptr;
         ComPtr<ID3DBlob> errorBlob = nullptr;
-        HRESULT hr =  D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+        HRESULT hr =  ::D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
         if (errorBlob != nullptr)
         {
@@ -672,16 +672,16 @@ namespace D3D
         return ret;
     }
 
-    uint64_t D3D12Manager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t dest_offset, void* copy_data, uint64_t copy_lenght)
+    uint64_t D3D12Manager::PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t dest_offset, void* copy_data, uint64_t copy_lenght, D3D12_RESOURCE_STATES res_state_before, D3D12_RESOURCE_STATES res_state_after)
     {
         auto& d3d = D3D12_MANAGER_INSTANCE_;
-        return d3d.copy_resource_manager_.PostUploadBufferTask(d3d_dest_resource, dest_offset, copy_data, copy_lenght);
+        return d3d.copy_resource_manager_.PostUploadBufferTask(d3d_dest_resource, dest_offset, copy_data, copy_lenght, res_state_before, res_state_after);
     }
 
-    uint64_t D3D12Manager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout)
+    uint64_t D3D12Manager::PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout, D3D12_RESOURCE_STATES res_state_before, D3D12_RESOURCE_STATES res_state_after)
     {
         auto& d3d = D3D12_MANAGER_INSTANCE_;
-        return d3d.copy_resource_manager_.PostUploadTextureTask(d3d_dest_resource, first_subresource, subresource_count, copy_data, image_layout);
+        return d3d.copy_resource_manager_.PostUploadTextureTask(d3d_dest_resource, first_subresource, subresource_count, copy_data, image_layout, res_state_before, res_state_after);
     }
 
     uint64_t D3D12Manager::GetCurCopyTaskID()

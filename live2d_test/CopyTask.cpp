@@ -49,8 +49,8 @@ namespace D3D
     {
         ::memcpy(upload_resource_map_data, src_data, length);
 
-        auto before_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, 0);
-        auto after_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON, 0);
+        auto before_barrier = TransitionBarrier(dest_res, res_state_before, D3D12_RESOURCE_STATE_COPY_DEST, 0);
+        auto after_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COPY_DEST, res_state_after, 0);
 
         command->ResourceBarrier(1, &before_barrier);
         command->CopyBufferRegion(dest_res, dest_offset, upload_resource, 0, length);
@@ -85,8 +85,8 @@ namespace D3D
             }
         }
 
-        auto before_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, 0);
-        auto after_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON, 0);
+        auto before_barrier = TransitionBarrier(dest_res, res_state_before, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+        auto after_barrier = TransitionBarrier(dest_res, D3D12_RESOURCE_STATE_COPY_DEST, res_state_after, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
         command->ResourceBarrier(1, &before_barrier);
 

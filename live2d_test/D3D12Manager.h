@@ -82,9 +82,9 @@ namespace D3D
 
         static ResourceLayout GetCopyableFootprints(ID3D12Resource* resource, uint32_t first_resource_index = 0, uint32_t num_resources = 1, uint64_t base_offset = 0);
 
-        static uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t dest_offset, void* copy_data, uint64_t copy_lenght);
+        static uint64_t PostUploadBufferTask(ID3D12Resource* d3d_dest_resource, uint64_t dest_offset, void* copy_data, uint64_t copy_lenght, D3D12_RESOURCE_STATES res_state_before = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES res_state_after = D3D12_RESOURCE_STATE_COMMON);
 
-        static uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout);
+        static uint64_t PostUploadTextureTask(ID3D12Resource* d3d_dest_resource, uint32_t first_subresource, uint32_t subresource_count, void* copy_data, const ImageLayout* image_layout, D3D12_RESOURCE_STATES res_state_before = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES res_state_after = D3D12_RESOURCE_STATE_COMMON);
 
         static uint64_t GetCurCopyTaskID();
 
