@@ -1,9 +1,10 @@
 #include "D3D12Renderer.h"
 
+
 #include "DirectXTK/DescriptorHeap.h"
 #include "DirectXColors.h"
 #include "D3DUtil.h"
-
+#include "ImGuiProxy.h"
 
 namespace D3D
 {
@@ -191,6 +192,8 @@ namespace D3D
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
 
         command_list_->DrawIndexedInstanced(mesh_data_.Indices16.size(), 1, 0, 0, 0);
+
+        ImGuiProxy::PopulateCommandList(command_list_.Get());
 
         resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;

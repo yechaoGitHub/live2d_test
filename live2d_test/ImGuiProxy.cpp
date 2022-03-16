@@ -1,6 +1,7 @@
 #include "ImGuiProxy.h"
 #include "d3dcompiler.h"
 
+
 namespace D3D
 {
     using namespace Microsoft::WRL;
@@ -12,9 +13,14 @@ namespace D3D
         ThrowIfFalse(!IMGUI_CONTEXT_.imgui_context);
         IMGUI_CONTEXT_.imgui_context = ImGui::CreateContext();
 
+        InitFontTexture();
         InitRootSignature();
         InitShaderPSO();
-        InitFontTexture();
+        InitVertexIndexBuffer();
+    }
+
+    void ImGuiProxy::Unitialize()
+    {
     }
 
     void ImGuiProxy::InitRootSignature()
@@ -211,7 +217,14 @@ namespace D3D
         }
 
         ThrowIfFailed(D3D12Manager::GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&IMGUI_CONTEXT_.pso)));
+    }
 
+    void ImGuiProxy::InitVertexIndexBuffer()
+    {
+        IMGUI_CONTEXT_.vertex_buffer_size = 1024 * 1024 * 4;
+        IMGUI_CONTEXT_.vertex_buffer = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, IMGUI_CONTEXT_.vertex_buffer_size);
+        IMGUI_CONTEXT_.index_buffer_size = 1024 * 1024;
+        IMGUI_CONTEXT_.index_buffer = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, IMGUI_CONTEXT_.index_buffer_size);
     }
 
     void ImGuiProxy::InitFontTexture()
@@ -258,7 +271,7 @@ namespace D3D
 
             D3D12Manager::WaitCopyTask(task_id);
 
-            IMGUI_CONTEXT_.srv_heap = D3D12Manager::CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+            IMGUI_CONTEXT_.srv_heap = D3D12Manager::CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
             // Create texture view
             D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
             ZeroMemory(&srvDesc, sizeof(srvDesc));
@@ -271,6 +284,140 @@ namespace D3D
         }
 
         io.Fonts->SetTexID((ImTextureID)IMGUI_CONTEXT_.srv_heap->GetGPUDescriptorHandleForHeapStart().ptr);
+    }
+
+    void ImGuiProxy::PopulateCommandList(ID3D12GraphicsCommandList* cmd)
+    {
+        auto draw_data = ImGui::GetDrawData();
+        if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
+            return;
+
+        auto& vert_buffer = IMGUI_CONTEXT_.vertex_buffer;
+        auto& vert_buffer_size = IMGUI_CONTEXT_.vertex_buffer_size;
+        auto& index_buffer = IMGUI_CONTEXT_.index_buffer;
+        auto& index_buffer_size = IMGUI_CONTEXT_.index_buffer_size;
+
+        auto require_vert_buffer_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
+        if (require_vert_buffer_size > IMGUI_CONTEXT_.vertex_buffer_size)
+        {
+            vert_buffer.Reset();
+            vert_buffer_size = require_vert_buffer_size * 1.5;
+            vert_buffer = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, vert_buffer_size);
+        }
+
+        auto require_index_buffer_size = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
+        if (require_index_buffer_size > IMGUI_CONTEXT_.index_buffer_size)
+        {
+            index_buffer.Reset();
+            index_buffer_size = require_index_buffer_size * 1.5;
+            index_buffer = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, index_buffer_size);
+        }
+
+        D3D12_RANGE vert_range{};
+        vert_range.End = require_vert_buffer_size;
+        ImDrawVert* map_vert_data{};
+        ThrowIfFailed(vert_buffer->Map(0, &vert_range, reinterpret_cast<void**>(&map_vert_data)));
+
+        D3D12_RANGE index_range{};
+        index_range.End = require_index_buffer_size;
+        ImDrawIdx* map_index_data{};
+        ThrowIfFailed(index_buffer->Map(0, &index_range, reinterpret_cast<void**>(&map_index_data)));
+
+        for (int n = 0; n < draw_data->CmdListsCount; n++)
+        {
+            const ImDrawList* cmd_list = draw_data->CmdLists[n];
+            memcpy(map_vert_data, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+            memcpy(map_index_data, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+            map_vert_data += cmd_list->VtxBuffer.Size;
+            map_index_data += cmd_list->IdxBuffer.Size;
+        }
+
+        vert_buffer->Unmap(0, nullptr);
+        index_buffer->Unmap(0, nullptr);
+
+        float L = draw_data->DisplayPos.x;
+        float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+        float T = draw_data->DisplayPos.y;
+        float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+        auto mat = DirectX::XMMatrixOrthographicOffCenterLH(L, R, B, T, -20.0f, 20.0f);
+        DirectX::XMStoreFloat4x4(&IMGUI_CONTEXT_.mvp, mat);
+
+        D3D12_VIEWPORT vp{};
+        vp.Width = draw_data->DisplaySize.x;
+        vp.Height = draw_data->DisplaySize.y;
+        vp.MinDepth = 0.0f;
+        vp.MaxDepth = 1.0f;
+        vp.TopLeftX = vp.TopLeftY = 0.0f;
+        cmd->RSSetViewports(1, &vp);
+
+        D3D12_VERTEX_BUFFER_VIEW vbv{};
+        vbv.BufferLocation = vert_buffer->GetGPUVirtualAddress();
+        vbv.SizeInBytes = require_vert_buffer_size;
+        vbv.StrideInBytes = sizeof(ImDrawVert);
+        cmd->IASetVertexBuffers(0, 1, &vbv);
+
+        D3D12_INDEX_BUFFER_VIEW ibv;
+        memset(&ibv, 0, sizeof(D3D12_INDEX_BUFFER_VIEW));
+        ibv.BufferLocation = index_buffer->GetGPUVirtualAddress();
+        ibv.SizeInBytes = require_index_buffer_size;
+        ibv.Format = sizeof(ImDrawIdx) == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+        cmd->IASetIndexBuffer(&ibv);
+
+        cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        cmd->SetPipelineState(IMGUI_CONTEXT_.pso.Get());
+        cmd->SetGraphicsRootSignature(IMGUI_CONTEXT_.root_signature.Get());
+
+        ID3D12DescriptorHeap* heap[] = { IMGUI_CONTEXT_.srv_heap.Get() };
+        cmd->SetDescriptorHeaps(1, heap);
+        cmd->SetGraphicsRoot32BitConstants(0, 16, &IMGUI_CONTEXT_.mvp, 0);
+
+        // Setup blend factor
+        const float blend_factor[4] = { 0.f, 0.f, 0.f, 0.f };
+        cmd->OMSetBlendFactor(blend_factor);
+
+        // Render command lists
+ // (Because we merged all buffers into a single one, we maintain our own offset into them)
+        int global_vtx_offset = 0;
+        int global_idx_offset = 0;
+        ImVec2 clip_off = draw_data->DisplayPos;
+        for (int n = 0; n < draw_data->CmdListsCount; n++)
+        {
+            const ImDrawList* cmd_list = draw_data->CmdLists[n];
+            for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+            {
+                const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+                if (pcmd->UserCallback != NULL)
+                {
+                    // User callback, registered via ImDrawList::AddCallback()
+                    // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+                    //if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+                    //    ImGui_ImplDX12_SetupRenderState(draw_data, ctx, fr);
+                    //else
+                    //    pcmd->UserCallback(cmd_list, pcmd);
+                    ThrowIfFalse(0);
+                }
+                else
+                {
+                    // Project scissor/clipping rectangles into framebuffer space
+                    ImVec2 clip_min(pcmd->ClipRect.x - clip_off.x, pcmd->ClipRect.y - clip_off.y);
+                    ImVec2 clip_max(pcmd->ClipRect.z - clip_off.x, pcmd->ClipRect.w - clip_off.y);
+                    if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
+                        continue;
+
+                    // Apply Scissor/clipping rectangle, Bind texture, Draw
+                    const D3D12_RECT r = { (LONG)clip_min.x, (LONG)clip_min.y, (LONG)clip_max.x, (LONG)clip_max.y };
+                    D3D12_GPU_DESCRIPTOR_HANDLE texture_handle = {};
+                    texture_handle.ptr = (UINT64)pcmd->GetTexID();
+
+                    cmd->SetGraphicsRootDescriptorTable(1, texture_handle);
+                    cmd->RSSetScissorRects(1, &r);
+                    cmd->DrawIndexedInstanced(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
+                }
+            }
+            global_idx_offset += cmd_list->IdxBuffer.Size;
+            global_vtx_offset += cmd_list->VtxBuffer.Size;
+        }
+
     }
 
 };

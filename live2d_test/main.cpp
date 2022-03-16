@@ -30,6 +30,8 @@ int main(int argc, char** argv)
     D3D::D3D12Renderer renderer(hwnd, 800, 600);
     renderer.Initialize();
 
+    ImGui::GetMainViewport()->PlatformHandleRaw = (void*)hwnd;
+
     SDL_Event windows_event;
     bool quit{ false };
     while (!quit)
@@ -68,8 +70,25 @@ int main(int argc, char** argv)
         }
         else
         {
+            ImGuiIO& io = ImGui::GetIO();
+            RECT rect = { 0, 0, 0, 0 };
+            ::GetClientRect(hwnd, &rect);
+            io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
+
+            ImGui::NewFrame();
+            ImGui::ShowDemoWindow();
+            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+            ImGui::Render();
             renderer.Update();
             renderer.Render();
+
+
+
         }
     }
 
