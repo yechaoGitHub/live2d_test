@@ -487,12 +487,36 @@ namespace D3D
 
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow();
-        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+        ImGui::Begin("DX12 Render Debug Windows");
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Spacing();
+
+        RECT wnd_rect{};
+        ::GetWindowRect(window_handle_, &wnd_rect);
+        int width = wnd_rect.right - wnd_rect.left;
+        int height = wnd_rect.bottom - wnd_rect.top;
+        ImGui::Text("Windows Rect: X:%d Y:%d Width:%d Height:%d", wnd_rect.left, wnd_rect.top, width, height);
+        ImGui::Spacing();
+
+        RECT client_rect{};
+        ::GetWindowRect(window_handle_, &client_rect);
+        width = client_rect.right - client_rect.left;
+        height = client_rect.bottom - client_rect.top;
+        ImGui::Text("Windows Client Rect: X:%d Y:%d Width:%d Height:%d", wnd_rect.left, wnd_rect.top, width, height);
+        ImGui::Spacing();
+
+        auto camera_pos = camera_.GetPosition3f();
+        ImGui::Text("Camera Pos: x:%.5f y:%.5f, z:%.5f", camera_pos.x, camera_pos.y, camera_pos.z);
+        ImGui::Spacing();
+
+        auto camera_orientation = camera_.GetLook3f();
+        ImGui::Text("Camera Orientation: x:%.5f y:%.5f, z:%.5f", camera_orientation.x, camera_orientation.y, camera_orientation.z);
+        ImGui::Spacing();
+
+        ImGui::InputFloat("Camera Speed", &camera_move_speed_, 0.1f, 1.0f, "%.1f");
+
+
         ImGui::End();
 
         ImGui::Render();
