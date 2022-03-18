@@ -25,9 +25,12 @@ int main(int argc, char** argv)
     D3D::WICImage::Initialize();
     D3D::ImGuiProxy::Initialize();
 
-    hwnd = D3D::D3D12Manager::CreateD3DWindow(L"live2d", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600);
+    ImGuiKey key_event[] = { ImGuiKey_LeftShift, ImGuiKey_RightShift, ImGuiKey_LeftSuper, ImGuiKey_RightSuper, ImGuiKey_ModCtrl, ImGuiKey_ModShift, ImGuiKey_ModAlt, ImGuiKey_ModSuper };
+    D3D::ImGuiProxy::RegisterKeyboardEvent(key_event, _countof(key_event));
+
+    hwnd = D3D::D3D12Manager::CreateD3DWindow(L"live2d", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1920, 1080);
     window = SDL_CreateWindowFrom(hwnd);
-    D3D::D3D12Renderer renderer(hwnd, 800, 600);
+    D3D::D3D12Renderer renderer(hwnd, 1920, 1080);
     renderer.Initialize();
 
     ImGui::GetMainViewport()->PlatformHandleRaw = (void*)hwnd;
@@ -83,18 +86,20 @@ int main(int argc, char** argv)
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
+
+            D3D::ImGuiProxy::HandleInputEvent(hwnd);
+
             ImGui::Render();
+
             renderer.Update();
             renderer.Render();
-
-
-
         }
     }
 
     SDL_DestroyWindow(window);
     SDL_Quit();
 
+    D3D::ImGuiProxy::Uninitialize();
     renderer.ClearUp();
     renderer.~D3D12Renderer();
     D3D::WICImage::Uninitialize();

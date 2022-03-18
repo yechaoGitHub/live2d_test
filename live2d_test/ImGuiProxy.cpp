@@ -8,6 +8,116 @@ namespace D3D
 
     ImGuiProxy::ImGuiProxyContext ImGuiProxy::IMGUI_CONTEXT_;
 
+    #define IM_VK_KEYPAD_ENTER      (VK_RETURN + 256)
+
+    const std::unordered_map<ImGuiKey, int> ImGuiProxy::IMKEY_TO_VK_MAP_ =
+    {
+        {ImGuiKey_Tab,          VK_TAB},
+        {ImGuiKey_LeftArrow,    VK_LEFT},
+        {ImGuiKey_RightArrow,   VK_RIGHT},
+        {ImGuiKey_UpArrow,      VK_UP},
+        {ImGuiKey_DownArrow,    VK_DOWN},
+        {ImGuiKey_PageUp,       VK_PRIOR},
+        {ImGuiKey_PageDown,     VK_NEXT},
+        {ImGuiKey_Home,         VK_HOME},
+        {ImGuiKey_End,          VK_END},
+        {ImGuiKey_Insert,       VK_INSERT},
+        {ImGuiKey_Delete,       VK_DELETE},
+        {ImGuiKey_Backspace,    VK_BACK},
+        {ImGuiKey_Space,        VK_SPACE},
+        {ImGuiKey_Enter,        VK_RETURN},
+        {ImGuiKey_Escape,       VK_ESCAPE},
+        {ImGuiKey_LeftCtrl,     VK_LCONTROL},
+        {ImGuiKey_LeftShift,    VK_LSHIFT},
+        {ImGuiKey_LeftAlt,      VK_LMENU},
+        {ImGuiKey_LeftSuper,    VK_LWIN},
+        {ImGuiKey_RightCtrl,    VK_RSHIFT},
+        {ImGuiKey_RightShift,   VK_RSHIFT},
+        {ImGuiKey_RightAlt,     VK_RMENU},
+        {ImGuiKey_RightSuper,   VK_RWIN},
+        {ImGuiKey_Menu,         VK_APPS},
+        {ImGuiKey_0,            '0'},
+        {ImGuiKey_1,            '1'},
+        {ImGuiKey_2,            '2'},
+        {ImGuiKey_3,            '3'},
+        {ImGuiKey_4,            '4'},
+        {ImGuiKey_5,            '5'},
+        {ImGuiKey_6,            '6'},
+        {ImGuiKey_7,            '7'},
+        {ImGuiKey_8,            '8'},
+        {ImGuiKey_9,            '9'},
+        {ImGuiKey_A,            'A'},
+        {ImGuiKey_B,            'B'},
+        {ImGuiKey_C,            'C'},
+        {ImGuiKey_D,            'D'},
+        {ImGuiKey_E,            'E'},
+        {ImGuiKey_F,            'F'},
+        {ImGuiKey_G,            'G'},
+        {ImGuiKey_H,            'H'},
+        {ImGuiKey_I,            'I'},
+        {ImGuiKey_J,            'J'},
+        {ImGuiKey_K,            'K'},
+        {ImGuiKey_L,            'L'},
+        {ImGuiKey_M,            'M'},
+        {ImGuiKey_N,            'N'},
+        {ImGuiKey_O,            '0'},
+        {ImGuiKey_P,            'P'},
+        {ImGuiKey_Q,            'Q'},
+        {ImGuiKey_R,            'R'},
+        {ImGuiKey_S,            'S'},
+        {ImGuiKey_T,            'T'},
+        {ImGuiKey_U,            'U'},
+        {ImGuiKey_V,            'V'},
+        {ImGuiKey_W,            'W'},
+        {ImGuiKey_X,            'X'},
+        {ImGuiKey_Y,            'Y'},
+        {ImGuiKey_Z,            'Z'},
+        {ImGuiKey_F1,           VK_F1},
+        {ImGuiKey_F2,           VK_F2},
+        {ImGuiKey_F3,           VK_F3},
+        {ImGuiKey_F4,           VK_F4},
+        {ImGuiKey_F5,           VK_F5},
+        {ImGuiKey_F6,           VK_F6},
+        {ImGuiKey_F7,           VK_F7},
+        {ImGuiKey_F8,           VK_F8},
+        {ImGuiKey_F9,           VK_F9},
+        {ImGuiKey_F10,          VK_F10},
+        {ImGuiKey_F11,          VK_F11},
+        {ImGuiKey_F12,          VK_F12},
+        {ImGuiKey_Apostrophe,   VK_OEM_7},
+        {ImGuiKey_Comma,        VK_OEM_COMMA},
+        {ImGuiKey_Minus,        VK_OEM_MINUS},
+        {ImGuiKey_Period,       VK_OEM_PERIOD},
+        {ImGuiKey_Slash,        VK_OEM_2},
+        {ImGuiKey_Semicolon,    VK_OEM_1},
+        {ImGuiKey_Equal,        VK_OEM_PLUS},
+        {ImGuiKey_LeftBracket,  VK_OEM_4},
+        {ImGuiKey_Backslash,    VK_OEM_5},
+        {ImGuiKey_RightBracket, VK_OEM_6},
+        {ImGuiKey_GraveAccent,  VK_OEM_3},
+        {ImGuiKey_CapsLock,     VK_CAPITAL},
+        {ImGuiKey_ScrollLock,   VK_SCROLL},
+        {ImGuiKey_NumLock,      VK_NUMLOCK},
+        {ImGuiKey_PrintScreen,  VK_SNAPSHOT},
+        {ImGuiKey_Pause,        VK_PAUSE},
+        {ImGuiKey_Keypad0,      VK_NUMPAD0},
+        {ImGuiKey_Keypad1,      VK_NUMPAD1},
+        {ImGuiKey_Keypad2,      VK_NUMPAD2},
+        {ImGuiKey_Keypad3,      VK_NUMPAD3},
+        {ImGuiKey_Keypad4,      VK_NUMPAD4},
+        {ImGuiKey_Keypad5,      VK_NUMPAD5},
+        {ImGuiKey_Keypad6,      VK_NUMPAD6},
+        {ImGuiKey_Keypad7,      VK_NUMPAD7},
+        {ImGuiKey_Keypad8,      VK_NUMPAD8},
+        {ImGuiKey_Keypad9,      VK_NUMPAD9},
+        {ImGuiKey_KeypadDecimal,    VK_DECIMAL},
+        {ImGuiKey_KeypadDivide,     VK_DIVIDE},
+        {ImGuiKey_KeypadMultiply,   VK_MULTIPLY},
+        {ImGuiKey_KeypadSubtract,   VK_SUBTRACT},
+        {ImGuiKey_KeypadAdd,        VK_ADD},
+        {ImGuiKey_KeypadEnter,      IM_VK_KEYPAD_ENTER}
+    };
+
     void ImGuiProxy::Initialize()
     {
         ThrowIfFalse(!IMGUI_CONTEXT_.imgui_context);
@@ -19,8 +129,49 @@ namespace D3D
         InitVertexIndexBuffer();
     }
 
-    void ImGuiProxy::Unitialize()
+    void ImGuiProxy::Uninitialize()
     {
+        ImGui::DestroyContext(IMGUI_CONTEXT_.imgui_context);
+        IMGUI_CONTEXT_.imgui_context = nullptr;
+        IMGUI_CONTEXT_.pso.Reset();
+        IMGUI_CONTEXT_.root_signature.Reset();
+        IMGUI_CONTEXT_.srv_heap.Reset();
+        IMGUI_CONTEXT_.font_texture.Reset();
+        IMGUI_CONTEXT_.vertex_buffer.Reset();
+        IMGUI_CONTEXT_.vertex_buffer_size = 0;
+        IMGUI_CONTEXT_.index_buffer.Reset();
+        IMGUI_CONTEXT_.index_buffer_size = 0;
+        IMGUI_CONTEXT_.mvp = {};
+        IMGUI_CONTEXT_.register_keys.clear();
+    }
+
+    void ImGuiProxy::RegisterKeyboardEvent(const ImGuiKey* keys, int count)
+    {
+        auto& register_keys = IMGUI_CONTEXT_.register_keys;
+
+        for (int i = 0; i < count; i++)
+        {
+            auto& key = keys[i];
+            auto it_find = std::find(register_keys.begin(), register_keys.end(), key);
+            if (it_find == register_keys.end())
+            {
+                register_keys.push_back(key);
+            }
+        }
+    }
+
+    void ImGuiProxy::UnregisterKeyboardEvent(const ImGuiKey* keys, int count)
+    {
+        auto& register_keys = IMGUI_CONTEXT_.register_keys;
+        for (int i = 0; i < count; i++)
+        {
+            auto& key = keys[i];
+            auto it_find = std::find(register_keys.begin(), register_keys.end(), key);
+            if (it_find != register_keys.end())
+            {
+                register_keys.erase(it_find);
+            }
+        }
     }
 
     void ImGuiProxy::InitRootSignature()
@@ -286,6 +437,116 @@ namespace D3D
         io.Fonts->SetTexID((ImTextureID)IMGUI_CONTEXT_.srv_heap->GetGPUDescriptorHandleForHeapStart().ptr);
     }
 
+    int ImGuiProxy::ImGuiKeyToVk(ImGuiKey key)
+    {
+        auto it = IMKEY_TO_VK_MAP_.find(key);
+        if (it != IMKEY_TO_VK_MAP_.end())
+        {
+            return it->second;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    bool ImGuiProxy::IsVkDown(int vk, bool test_last_click)
+    {
+        int ret = ::GetAsyncKeyState(vk);
+        if (test_last_click)
+        {
+            return (ret & 0x8001) != 0;
+        }
+        else
+        {
+            return (ret & 0x8000) != 0;
+        }
+    }
+
+    void ImGuiProxy::HandleMouseInput(HWND hwnd)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        auto& mouse_button_state = IMGUI_CONTEXT_.mouse_button_state;
+
+        bool is_rbtn_click = (mouse_button_state & kLButtonClick) != 0;
+        bool is_lbtn_click = (mouse_button_state & kRButtonClick) != 0;
+        const bool is_app_focused = (::GetForegroundWindow() == hwnd);
+
+        if (is_rbtn_click | is_lbtn_click ||
+            is_app_focused)
+        {
+            POINT pos{};
+            if (::GetCursorPos(&pos) && ::ScreenToClient(hwnd, &pos))
+            {
+                io.AddMousePosEvent((float)pos.x, (float)pos.y);
+            }
+
+            if (IsVkDown(VK_LBUTTON, !is_rbtn_click))
+            {
+                io.AddMouseButtonEvent(0, true);
+                mouse_button_state |= kLButtonClick;
+            }
+            else if(is_rbtn_click)
+            {
+                io.AddMouseButtonEvent(0, false);
+                mouse_button_state &(~kLButtonClick);
+            }
+
+            if(IsVkDown(VK_RBUTTON, !is_lbtn_click))
+            {
+                io.AddMouseButtonEvent(1, true);
+                mouse_button_state |= kRButtonClick;
+            }
+            else if(is_lbtn_click)
+            {
+                io.AddMouseButtonEvent(1, false);
+                mouse_button_state &(~kRButtonClick);
+            }
+        }
+    }
+
+    void ImGuiProxy::HandleKeyboardInput(HWND hwnd)
+    {
+        const bool is_app_focused = (::GetForegroundWindow() == hwnd);
+        if (is_app_focused)
+        {
+            auto& register_keys = IMGUI_CONTEXT_.register_keys;
+
+            for (auto& key : register_keys)
+            {
+                int vk_key = ImGuiKeyToVk(key);
+                if (vk_key && IsVkDown(vk_key, false))
+                {
+                    AddKeyEvent(key, true);
+                }
+            }
+        }
+    }
+
+    void ImGuiProxy::HandleInputEvent(HWND hwnd)
+    {
+        HandleMouseInput(hwnd);
+        HandleKeyboardInput(hwnd);
+    }
+
+    void ImGuiProxy::AddKeyEvent(ImGuiKey key, bool down)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddKeyEvent(key, down);
+    }
+
+    void ImGuiProxy::AddMousePosEvent(float x, float y)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMousePosEvent(x, y);
+    }
+
+    void ImGuiProxy::AddMouseButtonEvent(int mouse_button, bool down)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMouseButtonEvent(mouse_button, down);
+    }
+
     void ImGuiProxy::PopulateCommandList(ID3D12GraphicsCommandList* cmd)
     {
         auto draw_data = ImGui::GetDrawData();
@@ -376,7 +637,7 @@ namespace D3D
         cmd->OMSetBlendFactor(blend_factor);
 
         // Render command lists
- // (Because we merged all buffers into a single one, we maintain our own offset into them)
+        // (Because we merged all buffers into a single one, we maintain our own offset into them)
         int global_vtx_offset = 0;
         int global_idx_offset = 0;
         ImVec2 clip_off = draw_data->DisplayPos;

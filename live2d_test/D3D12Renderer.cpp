@@ -127,32 +127,35 @@ namespace D3D
     {
         timer_.Tick();
         float tick = timer_.DeltaTime();
-        HandleInput(tick);
 
-        camera_.UpdateViewMatrix();
+        if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+        {
+            HandleInput(tick);
+            camera_.UpdateViewMatrix();
 
-        auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-        auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-        auto world_mat = xm_world_trans * xm_world_scalar;
+            auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
+            auto world_mat = xm_world_trans * xm_world_scalar;
 
-        auto view = camera_.GetView();
-        auto proj = camera_.GetProj();
-        auto view_proj = view * proj;
+            auto view = camera_.GetView();
+            auto proj = camera_.GetProj();
+            auto view_proj = view * proj;
 
-        ObjectConstants obj_constants;
-        obj_constants.local_mat = model_.GetModelMatrix4x4();
+            ObjectConstants obj_constants;
+            obj_constants.local_mat = model_.GetModelMatrix4x4();
 
-        XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
-        XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
-        XMStoreFloat4x4(&obj_constants.view_mat, view);
-        XMStoreFloat4x4(&obj_constants.proj_mat, proj);
-        XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
-        XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+            XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
+            XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
+            XMStoreFloat4x4(&obj_constants.view_mat, view);
+            XMStoreFloat4x4(&obj_constants.proj_mat, proj);
+            XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
+            XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
-        void* map_data{};
-        const_buffer_->Map(0, nullptr, &map_data);
-        ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
-        const_buffer_->Unmap(0, nullptr);
+            void* map_data{};
+            const_buffer_->Map(0, nullptr, &map_data);
+            ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
+            const_buffer_->Unmap(0, nullptr);
+        }
     }
 
     void D3D12Renderer::Render()
