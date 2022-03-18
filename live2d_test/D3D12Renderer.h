@@ -17,7 +17,7 @@ namespace D3D
     class D3D12Renderer
     {
     public:
-        D3D12Renderer(HWND hwnd, int width, int height);
+        D3D12Renderer(HWND hwnd);
         ~D3D12Renderer();
 
         Camera& GetCamera();
@@ -28,6 +28,7 @@ namespace D3D
         void ClearUp();
         void Update();
         void Render();
+        void ShowDebugWindow(bool show_debug_window);
 
         virtual void OnMouseDown(uint8_t btn, uint32_t x, uint32_t y);
         virtual void OnMouseMove(uint32_t x, uint32_t y);
@@ -64,6 +65,7 @@ namespace D3D
         void InitResourceBinding();
 
         void HandleInput(float duration);
+        void DrawDebugWindow(ID3D12GraphicsCommandList *cmd);
 
         HWND                                                window_handle_{};
         int                                                 client_width_{};
@@ -118,6 +120,8 @@ namespace D3D
         DirectX::XMFLOAT3                                   start_look_at_ = {};
         DirectX::XMFLOAT3                                   start_up_ = {};
         DirectX::XMFLOAT3                                   start_right_ = {};
+
+        bool                                                show_debug_window_ = false;
     };
 
 };

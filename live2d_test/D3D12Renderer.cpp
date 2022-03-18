@@ -14,11 +14,13 @@ namespace D3D
 
     GeometryGenerator D3D12Renderer::GEO_GENERATOR_;
 
-    D3D12Renderer::D3D12Renderer(HWND hwnd, int width, int height) :
-        window_handle_(hwnd),
-        client_width_(width),
-        client_height_(height)
+    D3D12Renderer::D3D12Renderer(HWND hwnd) :
+        window_handle_(hwnd)
     {
+        RECT rt{};
+        ::GetClientRect(window_handle_, &rt);
+        client_width_ = rt.right - rt.top;
+        client_height_ = rt.bottom - rt.top;
     }
 
     D3D12Renderer::~D3D12Renderer()
@@ -38,6 +40,11 @@ namespace D3D
 
     void D3D12Renderer::Initialize()
     {
+        ImGui::GetMainViewport()->PlatformHandleRaw = (void*)window_handle_;
+
+        ImGuiKey key_event[] = { ImGuiKey_LeftShift, ImGuiKey_RightShift, ImGuiKey_LeftSuper, ImGuiKey_RightSuper, ImGuiKey_ModCtrl, ImGuiKey_ModShift, ImGuiKey_ModAlt, ImGuiKey_ModSuper };
+        D3D::ImGuiProxy::RegisterKeyboardEvent(key_event, _countof(key_event));
+
         command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_FLAG_NONE);
         command_list_alloc_ = D3D12Manager::CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT);
         command_list_ = D3D12Manager::CreateCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT, command_list_alloc_.Get());
@@ -129,7 +136,8 @@ namespace D3D
         timer_.Tick();
         float tick = timer_.DeltaTime();
 
-        if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+        if (show_debug_window_ &&
+            !ImGuiProxy::HandleInputEvent(window_handle_, tick))
         {
             HandleInput(tick);
             camera_.UpdateViewMatrix();
@@ -156,10 +164,6 @@ namespace D3D
             const_buffer_->Map(0, nullptr, &map_data);
             ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
             const_buffer_->Unmap(0, nullptr);
-        }
-        else
-        {
-            std::cout << "hit";
         }
     }
 
@@ -201,11 +205,15 @@ namespace D3D
 
         command_list_->DrawIndexedInstanced(mesh_data_.Indices16.size(), 1, 0, 0, 0);
 
-        ImGuiProxy::PopulateCommandList(command_list_.Get());
+        if (show_debug_window_)
+        {
+            DrawDebugWindow(command_list_.Get());
+        }
 
         resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
         command_list_->ResourceBarrier(1, &resource_barrier);
+
 
         ThrowIfFailed(command_list_->Close());
 
@@ -215,6 +223,11 @@ namespace D3D
         FlushCommandQueue();
 
         swap_chain_->Present(0, 0);
+    }
+
+    void D3D12Renderer::ShowDebugWindow(bool show_debug_window)
+    {
+        show_debug_window_ = show_debug_window;
     }
 
     void D3D12Renderer::OnMouseDown(uint8_t btn, uint32_t x, uint32_t y)
@@ -358,7 +371,6 @@ namespace D3D
         map_ptr->intensity = 1.0f;
         map_ptr->direction = { 1.0, 0.0, 0.0 };
         map_ptr->color = { 1.0f, 0.0f, 0.0f };
-
     }
 
     void D3D12Renderer::InitResourceBinding()
@@ -465,6 +477,27 @@ namespace D3D
         }
 
         camera_.UpdateViewMatrix();
+    }
+
+    void D3D12Renderer::DrawDebugWindow(ID3D12GraphicsCommandList *cmd)
+    {
+
+        auto& io = ImGui::GetIO();
+        io.DisplaySize = { static_cast<float>(client_width_),static_cast<float>(client_height_) };
+
+        ImGui::NewFrame();
+
+        ImGui::ShowDemoWindow();
+        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::End();
+
+        ImGui::Render();
+
+        ImGuiProxy::PopulateCommandList(cmd);
     }
 
 };

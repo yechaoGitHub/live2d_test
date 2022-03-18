@@ -25,20 +25,11 @@ int main(int argc, char** argv)
     D3D::WICImage::Initialize();
     D3D::ImGuiProxy::Initialize();
 
-    ImGuiKey key_event[] = { ImGuiKey_LeftShift, ImGuiKey_RightShift, ImGuiKey_LeftSuper, ImGuiKey_RightSuper, ImGuiKey_ModCtrl, ImGuiKey_ModShift, ImGuiKey_ModAlt, ImGuiKey_ModSuper };
-    D3D::ImGuiProxy::RegisterKeyboardEvent(key_event, _countof(key_event));
-
     hwnd = D3D::D3D12Manager::CreateD3DWindow(L"live2d", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1920, 1080);
     window = SDL_CreateWindowFrom(hwnd);
-    RECT work_rt{};
-    ::GetClientRect(hwnd, &work_rt);
-    RECT wnd_rt{};
-    ::GetWindowRect(hwnd, &wnd_rt);
-
-    D3D::D3D12Renderer renderer(hwnd, work_rt.right, work_rt.bottom);
+    D3D::D3D12Renderer renderer(hwnd);
     renderer.Initialize();
-
-    ImGui::GetMainViewport()->PlatformHandleRaw = (void*)hwnd;
+    renderer.ShowDebugWindow(true);
 
     SDL_Event windows_event;
     bool quit{ false };
@@ -78,24 +69,6 @@ int main(int argc, char** argv)
         }
         else
         {
-            ImGuiIO& io = ImGui::GetIO();
-            RECT rect = { 0, 0, 0, 0 };
-            ::GetClientRect(hwnd, &rect);
-            io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
-
-            ImGui::NewFrame();
-            ImGui::ShowDemoWindow();
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
-
-            D3D::ImGuiProxy::HandleInputEvent(hwnd);
-
-            ImGui::Render();
-
             renderer.Update();
             renderer.Render();
         }

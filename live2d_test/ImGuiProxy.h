@@ -16,7 +16,7 @@ namespace D3D
         static void RegisterKeyboardEvent(const ImGuiKey* keys, int count);
         static void UnregisterKeyboardEvent(const ImGuiKey* keys, int count);
 
-        static void HandleInputEvent(HWND hwnd);
+        static bool HandleInputEvent(HWND hwnd, float tick);
         static void AddKeyEvent(ImGuiKey key, bool down);
         static void AddMousePosEvent(float x, float y);
         static void AddMouseButtonEvent(int mouse_button, bool down);

@@ -468,8 +468,8 @@ namespace D3D
         ImGuiIO& io = ImGui::GetIO();
         auto& mouse_button_state = IMGUI_CONTEXT_.mouse_button_state;
 
-        bool is_rbtn_click = (mouse_button_state & kLButtonClick) != 0;
-        bool is_lbtn_click = (mouse_button_state & kRButtonClick) != 0;
+        bool is_lbtn_click = (mouse_button_state & kLButtonClick) != 0;
+        bool is_rbtn_click = (mouse_button_state & kRButtonClick) != 0;
         const bool is_app_focused = (::GetForegroundWindow() == hwnd);
 
         if (is_rbtn_click | is_lbtn_click ||
@@ -481,26 +481,26 @@ namespace D3D
                 io.AddMousePosEvent((float)pos.x, (float)pos.y);
             }
 
-            if (IsVkDown(VK_LBUTTON, !is_rbtn_click))
+            if (IsVkDown(VK_LBUTTON, !is_lbtn_click))
             {
                 io.AddMouseButtonEvent(0, true);
                 mouse_button_state |= kLButtonClick;
             }
-            else if(is_rbtn_click)
+            else if(is_lbtn_click)
             {
                 io.AddMouseButtonEvent(0, false);
-                mouse_button_state &(~kLButtonClick);
+                mouse_button_state &= ~kLButtonClick;
             }
 
-            if(IsVkDown(VK_RBUTTON, !is_lbtn_click))
+            if(IsVkDown(VK_RBUTTON, !is_rbtn_click))
             {
                 io.AddMouseButtonEvent(1, true);
                 mouse_button_state |= kRButtonClick;
             }
-            else if(is_lbtn_click)
+            else if(is_rbtn_click)
             {
                 io.AddMouseButtonEvent(1, false);
-                mouse_button_state &(~kRButtonClick);
+                mouse_button_state &= ~kRButtonClick;
             }
         }
     }
@@ -523,10 +523,15 @@ namespace D3D
         }
     }
 
-    void ImGuiProxy::HandleInputEvent(HWND hwnd)
+    bool ImGuiProxy::HandleInputEvent(HWND hwnd, float tick)
     {
+        ImGuiIO& io = ImGui::GetIO();
+        io.DeltaTime = tick;
+
         HandleMouseInput(hwnd);
         HandleKeyboardInput(hwnd);
+
+        return ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     }
 
     void ImGuiProxy::AddKeyEvent(ImGuiKey key, bool down)
@@ -678,8 +683,5 @@ namespace D3D
             global_idx_offset += cmd_list->IdxBuffer.Size;
             global_vtx_offset += cmd_list->VtxBuffer.Size;
         }
-
     }
-
 };
-
