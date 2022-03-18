@@ -30,7 +30,12 @@ int main(int argc, char** argv)
 
     hwnd = D3D::D3D12Manager::CreateD3DWindow(L"live2d", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1920, 1080);
     window = SDL_CreateWindowFrom(hwnd);
-    D3D::D3D12Renderer renderer(hwnd, 1920, 1080);
+    RECT work_rt{};
+    ::GetClientRect(hwnd, &work_rt);
+    RECT wnd_rt{};
+    ::GetWindowRect(hwnd, &wnd_rt);
+
+    D3D::D3D12Renderer renderer(hwnd, work_rt.right, work_rt.bottom);
     renderer.Initialize();
 
     ImGui::GetMainViewport()->PlatformHandleRaw = (void*)hwnd;

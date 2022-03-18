@@ -1,10 +1,11 @@
 #include "D3D12Renderer.h"
 
-
 #include "DirectXTK/DescriptorHeap.h"
 #include "DirectXColors.h"
 #include "D3DUtil.h"
 #include "ImGuiProxy.h"
+#include <iostream>
+
 
 namespace D3D
 {
@@ -155,6 +156,10 @@ namespace D3D
             const_buffer_->Map(0, nullptr, &map_data);
             ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
             const_buffer_->Unmap(0, nullptr);
+        }
+        else
+        {
+            std::cout << "hit";
         }
     }
 
