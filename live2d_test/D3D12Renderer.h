@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <array>
+
 #include "D3D12Manager.h"
 #include "D3DCamera.h"
 #include "MathHelper.h"
@@ -9,8 +12,8 @@
 #include "Model.h"
 #include "GameTimer.h"
 
-#include <vector>
-#include <array>
+#include "ImmediateInput.h"
+
 
 namespace D3D
 {
@@ -29,13 +32,6 @@ namespace D3D
         void Update();
         void Render();
         void ShowDebugWindow(bool show_debug_window);
-
-        virtual void OnMouseDown(uint8_t btn, uint32_t x, uint32_t y);
-        virtual void OnMouseMove(uint32_t x, uint32_t y);
-        virtual void OnMouseUp(uint8_t btn, uint32_t x, uint32_t y);
-
-        virtual void OnKeyDown(uint32_t key);
-        virtual void OnKeyUp(uint32_t key);
 
     private:
 #pragma pack(push,1)
@@ -63,9 +59,11 @@ namespace D3D
         void InitImageResource();
         void InitLight();
         void InitResourceBinding();
-
-        void HandleInput(float duration);
         void DrawDebugWindow(ID3D12GraphicsCommandList *cmd);
+
+        void MouseEventHandle(MouseAction action, MouseButton btn, int x, int y);
+        void KeyEventHandle(KeyAction action, Key key);
+
 
         HWND                                                window_handle_{};
         int                                                 client_width_{};
@@ -113,6 +111,9 @@ namespace D3D
         Microsoft::WRL::ComPtr<IWICBitmapSource>            image_resource_;
         Model                                               model_;
         GameTimer                                           timer_;
+        float                                               tick_ = 0.0f;
+
+        ImmediateInput                                      im_input_;
 
         bool                                                mouse_click_ = false;
         int32_t                                             mouse_cur_x_ = 0;
@@ -123,7 +124,6 @@ namespace D3D
 
         bool                                                show_debug_window_ = false;
     };
-
 };
 
 

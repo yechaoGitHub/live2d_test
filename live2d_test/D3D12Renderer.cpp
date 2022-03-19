@@ -1,10 +1,12 @@
 #include "D3D12Renderer.h"
 
+#include <iostream>
+
 #include "DirectXTK/DescriptorHeap.h"
 #include "DirectXColors.h"
 #include "D3DUtil.h"
 #include "ImGuiProxy.h"
-#include <iostream>
+#include <functional>
 
 
 namespace D3D
@@ -15,7 +17,8 @@ namespace D3D
     GeometryGenerator D3D12Renderer::GEO_GENERATOR_;
 
     D3D12Renderer::D3D12Renderer(HWND hwnd) :
-        window_handle_(hwnd)
+        window_handle_(hwnd),
+        im_input_(hwnd)
     {
         RECT rt{};
         ::GetClientRect(window_handle_, &rt);
@@ -42,8 +45,12 @@ namespace D3D
     {
         ImGui::GetMainViewport()->PlatformHandleRaw = (void*)window_handle_;
 
-        ImGuiKey key_event[] = { ImGuiKey_LeftShift, ImGuiKey_RightShift, ImGuiKey_LeftSuper, ImGuiKey_RightSuper, ImGuiKey_ModCtrl, ImGuiKey_ModShift, ImGuiKey_ModAlt, ImGuiKey_ModSuper };
-        D3D::ImGuiProxy::RegisterKeyboardEvent(key_event, _countof(key_event));
+        Key keys[] = {Key_W, Key_A, Key_S, Key_D, Key_Space, Key_LeftCtrl, Key_RightCtrl };
+        im_input_.RegisterKeyEvent(keys, _countof(keys));
+
+        im_input_.RegisterMouseEventHandle(&D3D12Renderer::MouseEventHandle, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+
+        im_input_.RegisterKeyEventHandle(&D3D12Renderer::KeyEventHandle, this, std::placeholders::_1, std::placeholders::_2);
 
         command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_FLAG_NONE);
         command_list_alloc_ = D3D12Manager::CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT);
@@ -133,38 +140,38 @@ namespace D3D
 
     void D3D12Renderer::Update()
     {
+        auto& io = ImGui::GetIO();
+
         timer_.Tick();
-        float tick = timer_.DeltaTime();
+        tick_ = timer_.DeltaTime();
+        io.DeltaTime = tick_;
 
-        if (show_debug_window_ &&
-            !ImGuiProxy::HandleInputEvent(window_handle_, tick))
-        {
-            HandleInput(tick);
-            camera_.UpdateViewMatrix();
+        im_input_.HandleInput();
 
-            auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-            auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-            auto world_mat = xm_world_trans * xm_world_scalar;
+        camera_.UpdateViewMatrix();
 
-            auto view = camera_.GetView();
-            auto proj = camera_.GetProj();
-            auto view_proj = view * proj;
+        auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+        auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
+        auto world_mat = xm_world_trans * xm_world_scalar;
 
-            ObjectConstants obj_constants;
-            obj_constants.local_mat = model_.GetModelMatrix4x4();
+        auto view = camera_.GetView();
+        auto proj = camera_.GetProj();
+        auto view_proj = view * proj;
 
-            XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
-            XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
-            XMStoreFloat4x4(&obj_constants.view_mat, view);
-            XMStoreFloat4x4(&obj_constants.proj_mat, proj);
-            XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
-            XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+        ObjectConstants obj_constants;
+        obj_constants.local_mat = model_.GetModelMatrix4x4();
 
-            void* map_data{};
-            const_buffer_->Map(0, nullptr, &map_data);
-            ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
-            const_buffer_->Unmap(0, nullptr);
-        }
+        XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
+        XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
+        XMStoreFloat4x4(&obj_constants.view_mat, view);
+        XMStoreFloat4x4(&obj_constants.proj_mat, proj);
+        XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
+        XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+
+        void* map_data{};
+        const_buffer_->Map(0, nullptr, &map_data);
+        ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
+        const_buffer_->Unmap(0, nullptr);
     }
 
     void D3D12Renderer::Render()
@@ -228,44 +235,6 @@ namespace D3D
     void D3D12Renderer::ShowDebugWindow(bool show_debug_window)
     {
         show_debug_window_ = show_debug_window;
-    }
-
-    void D3D12Renderer::OnMouseDown(uint8_t btn, uint32_t x, uint32_t y)
-    {
-        ::SetCapture(window_handle_);
-
-        start_look_at_ = camera_.GetLook3f();
-        start_up_ = camera_.GetUp3f();
-        start_right_ = camera_.GetRight3f();
-        mouse_click_ = true;
-        mouse_cur_x_ = x;
-        mouse_cur_y_ = y;
-    }
-
-    void D3D12Renderer::OnMouseMove(uint32_t x, uint32_t y)
-    {
-
-    }
-
-    void D3D12Renderer::OnMouseUp(uint8_t btn, uint32_t x, uint32_t y)
-    {
-        ::ReleaseCapture();
-
-        start_look_at_ = {};
-        start_up_ = {};
-        mouse_click_ = false;
-        mouse_cur_x_ = 0;
-        mouse_cur_y_ = 0;
-    }
-
-    void D3D12Renderer::OnKeyDown(uint32_t key)
-    {
-
-    }
-
-    void D3D12Renderer::OnKeyUp(uint32_t key)
-    {
-
     }
 
     int D3D12Renderer::GetCurrentRenderTargetIndex()
@@ -406,79 +375,6 @@ namespace D3D
         D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(4));
     }
 
-    void D3D12Renderer::HandleInput(float duration)
-    {
-        float distance = duration * camera_move_speed_;
-        if (distance != 0.0f)
-        {
-            if (::GetAsyncKeyState('W') & 0x8000)
-            {
-                camera_.Walk(distance);
-            }
-
-            if (::GetAsyncKeyState('A') & 0x8000)
-            {
-                camera_.Strafe(-distance);
-            }
-
-            if (::GetAsyncKeyState('S') & 0x8000)
-            {
-                camera_.Walk(-distance);
-            }
-
-            if (::GetAsyncKeyState('D') & 0x8000)
-            {
-                camera_.Strafe(distance);
-            }
-
-            if (::GetAsyncKeyState(VK_SPACE) & 0x8000)
-            {
-                camera_.Float(distance);
-            }
-
-            if (::GetAsyncKeyState(VK_CONTROL) & 0x8000)
-            {
-                camera_.Float(-distance);
-            }
-        }
-
-        if (mouse_click_)
-        {
-            POINT pt{};
-            ThrowIfFalse(::GetCursorPos(&pt));
-            ThrowIfFalse(::ScreenToClient(window_handle_, &pt));
-
-            auto dx = pt.x - mouse_cur_x_;
-            auto dy = pt.y - mouse_cur_y_;
-            if (dx != 0 || dy != 0)
-            {
-                float dxf = XMConvertToRadians(dx);
-                float dyf = XMConvertToRadians(dy);
-
-                auto x_axis = camera_.GetRight3f();
-                auto y_axis = camera_.GetUp3f();
-                auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dxf);
-                auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dyf);
-
-                auto look_at = camera_.GetLook3f();
-                auto qr = XMQuaternionMultiply(qx, qy);
-                auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&look_at), qr);
-                auto v_up = XMQuaternionMultiply(XMLoadFloat3(&y_axis), qr);
-
-                XMFLOAT3 lookf3 = {};
-                XMFLOAT3 upf3 = {};
-                XMStoreFloat3(&lookf3, v_look_at);
-                XMStoreFloat3(&upf3, v_up);
-                camera_.SetOriention(lookf3, upf3);
-
-                mouse_cur_x_ = pt.x;
-                mouse_cur_y_ = pt.y;
-            }
-        }
-
-        camera_.UpdateViewMatrix();
-    }
-
     void D3D12Renderer::DrawDebugWindow(ID3D12GraphicsCommandList *cmd)
     {
 
@@ -496,7 +392,7 @@ namespace D3D
         ::GetWindowRect(window_handle_, &wnd_rect);
         int width = wnd_rect.right - wnd_rect.left;
         int height = wnd_rect.bottom - wnd_rect.top;
-        ImGui::Text("Windows Rect: X:%d Y:%d Width:%d Height:%d", wnd_rect.left, wnd_rect.top, width, height);
+        ImGui::Text("Window Rect: X:%d Y:%d Width:%d Height:%d", wnd_rect.left, wnd_rect.top, width, height);
         ImGui::Spacing();
 
         RECT client_rect{};
@@ -516,7 +412,6 @@ namespace D3D
 
         ImGui::InputFloat("Camera Speed", &camera_move_speed_, 0.1f, 1.0f, "%.1f");
 
-
         ImGui::End();
 
         ImGui::Render();
@@ -524,5 +419,127 @@ namespace D3D
         ImGuiProxy::PopulateCommandList(cmd);
     }
 
+    void D3D12Renderer::MouseEventHandle(MouseAction action, MouseButton btn, int x, int y)
+    {
+        auto& io = ImGui::GetIO();
+
+        bool handle_imgui_{ false };
+        if (show_debug_window_)
+        {
+            switch (action)
+            {
+                case D3D::kMouseMove:
+                    io.AddMousePosEvent(x, y);
+                break;
+
+                case D3D::kButtonPressed:
+                    io.AddMouseButtonEvent(btn - 1, true);
+                break;
+
+                case D3D::kButtonReleased:
+                    io.AddMouseButtonEvent(btn - 1, false);
+                break;
+            }
+
+            if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+            {
+                return;
+            }
+        }
+
+        switch (action)
+        {
+            case D3D::kMouseMove:
+            {
+                if (im_input_.IsMouseBtnHold(static_cast<MouseButton>(kLMouseButton | kRMouseButton)))
+                {
+                    auto dx = x - mouse_cur_x_;
+                    auto dy = y - mouse_cur_y_;
+                    if (dx != 0 || dy != 0)
+                    {
+                        float dxf = XMConvertToRadians(dx);
+                        float dyf = XMConvertToRadians(dy);
+
+                        auto x_axis = camera_.GetRight3f();
+                        auto y_axis = camera_.GetUp3f();
+                        auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dxf);
+                        auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dyf);
+
+                        auto look_at = camera_.GetLook3f();
+                        auto qr = XMQuaternionMultiply(qx, qy);
+                        auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&look_at), qr);
+                        auto v_up = XMQuaternionMultiply(XMLoadFloat3(&y_axis), qr);
+
+                        XMFLOAT3 lookf3 = {};
+                        XMFLOAT3 upf3 = {};
+                        XMStoreFloat3(&lookf3, v_look_at);
+                        XMStoreFloat3(&upf3, v_up);
+                        camera_.SetOriention(lookf3, upf3);
+
+                        mouse_cur_x_ = x;
+                        mouse_cur_y_ = y;
+                    }
+                }
+            }
+            break;
+
+            case D3D::kButtonPressed:
+            {
+                start_look_at_ = camera_.GetLook3f();
+                start_up_ = camera_.GetUp3f();
+                start_right_ = camera_.GetRight3f();
+                mouse_click_ = true;
+                mouse_cur_x_ = x;
+                mouse_cur_y_ = y;
+            }
+            break;
+
+            case D3D::kButtonReleased:
+            {
+                start_look_at_ = {};
+                start_up_ = {};
+                mouse_click_ = false;
+                mouse_cur_x_ = 0;
+                mouse_cur_y_ = 0;
+            }
+            break;
+        }
+
+    }
+
+    void D3D12Renderer::KeyEventHandle(KeyAction action, Key key)
+    {
+        float distance = tick_ * camera_move_speed_;
+        if (distance != 0.0f)
+        {
+            switch (key)
+            {
+                case Key_W:
+                    camera_.Walk(distance);
+                break;
+
+                case Key_A:
+                    camera_.Strafe(-distance);
+                break;
+
+                case Key_S:
+                    camera_.Walk(-distance);
+                break;
+
+                case Key_D:
+                    camera_.Strafe(distance);
+                break;
+
+                case Key_LeftCtrl:
+                case Key_RightCtrl:
+                    camera_.Float(-distance);
+                break;
+
+                case Key_Space:
+                    camera_.Float(distance);
+                break;
+            }
+        }
+    }
 };
 
