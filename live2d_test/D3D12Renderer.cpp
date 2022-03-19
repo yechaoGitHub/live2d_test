@@ -117,7 +117,6 @@ namespace D3D
 
         camera_.SetLens(0.25f * XM_PI, AspectRatio(), 1.0f, 1000.0f);
         camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -100.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
-        camera_.UpdateViewMatrix();
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
@@ -148,30 +147,33 @@ namespace D3D
 
         im_input_.HandleInput();
 
-        camera_.UpdateViewMatrix();
+        if (camera_.IsViewMatrixDirty())
+        {
+            camera_.UpdateViewMatrix();
 
-        auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-        auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-        auto world_mat = xm_world_trans * xm_world_scalar;
+            auto xm_world_trans = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            auto xm_world_scalar = XMMatrixScaling(1.0f, 1.0f, 1.0f);
+            auto world_mat = xm_world_trans * xm_world_scalar;
 
-        auto view = camera_.GetView();
-        auto proj = camera_.GetProj();
-        auto view_proj = view * proj;
+            auto view = camera_.GetView();
+            auto proj = camera_.GetProj();
+            auto view_proj = view * proj;
 
-        ObjectConstants obj_constants;
-        obj_constants.local_mat = model_.GetModelMatrix4x4();
+            ObjectConstants obj_constants;
+            obj_constants.local_mat = model_.GetModelMatrix4x4();
 
-        XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
-        XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
-        XMStoreFloat4x4(&obj_constants.view_mat, view);
-        XMStoreFloat4x4(&obj_constants.proj_mat, proj);
-        XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
-        XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+            XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
+            XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
+            XMStoreFloat4x4(&obj_constants.view_mat, view);
+            XMStoreFloat4x4(&obj_constants.proj_mat, proj);
+            XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
+            XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
-        void* map_data{};
-        const_buffer_->Map(0, nullptr, &map_data);
-        ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
-        const_buffer_->Unmap(0, nullptr);
+            void* map_data{};
+            const_buffer_->Map(0, nullptr, &map_data);
+            ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
+            const_buffer_->Unmap(0, nullptr);
+        }
     }
 
     void D3D12Renderer::Render()
@@ -441,7 +443,7 @@ namespace D3D
                 break;
             }
 
-            if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+            if (io.WantCaptureMouse)
             {
                 return;
             }

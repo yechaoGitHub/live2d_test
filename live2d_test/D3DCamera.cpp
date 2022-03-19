@@ -292,5 +292,10 @@ void Camera::UpdateViewMatrix()
 	}
 }
 
+bool Camera::IsViewMatrixDirty()
+{
+	return mViewDirty;
+}
+
 
 

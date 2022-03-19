@@ -65,6 +65,8 @@ public:
 	// After modifying camera position/orientation, call to rebuild the view matrix.
 	void UpdateViewMatrix();
 
+	bool IsViewMatrixDirty();
+
 private:
 
 	// Camera coordinate system with coordinates relative to world space.
@@ -81,7 +83,7 @@ private:
 	float mNearWindowHeight = 0.0f;
 	float mFarWindowHeight = 0.0f;
 
-	bool mViewDirty = true;
+	bool mViewDirty = false;
 
 	// Cache View/Proj matrices.
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
