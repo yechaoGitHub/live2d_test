@@ -17,12 +17,12 @@ namespace D3D
         static void Initialize();
         static void Uninitialize();
 
+        static Microsoft::WRL::ComPtr<IWICBitmap> CreateBitmap(uint32_t width, uint32_t height, void *data, REFWICPixelFormatGUID format);
         static Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> LoadImageFormFile(const std::wstring& file_path);
         static Microsoft::WRL::ComPtr<IWICBitmapSource> CovertToD3DPixelFormat(IWICBitmapSource* source_img);
         static Microsoft::WRL::ComPtr<IWICBitmap> CreateBmpFormSource(IWICBitmapSource* source);
         static Microsoft::WRL::ComPtr<IWICComponentInfo> GetImageComponenInfo(IWICBitmapSource* img);
         static Microsoft::WRL::ComPtr<IWICPixelFormatInfo> GetImagePixelFormatInfo(IWICBitmapSource* img);
-
 
         static WICPixelFormatGUID GetD3DPixelFormat();
 

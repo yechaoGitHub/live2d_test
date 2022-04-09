@@ -6,6 +6,7 @@
 #include <regex>
 #include <set>
 
+#include "D3D12BoundResourceManager.h"
 
 namespace D3D
 {
@@ -196,7 +197,10 @@ namespace D3D
         D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology_type,
         DXGI_FORMAT rtv_formats[8],
         int rtv_num,
-        DXGI_FORMAT dsv_format)
+        DXGI_FORMAT dsv_format,
+        D3D12_RASTERIZER_DESC rast_desc,
+        D3D12_BLEND_DESC blend_desc,
+        D3D12_DEPTH_STENCIL_DESC depth_stencil_desc)
     {
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
         desc.InputLayout = input_desc;
@@ -206,9 +210,9 @@ namespace D3D
         desc.DS = shaders[2];
         desc.HS = shaders[3];
         desc.GS = shaders[4];
-        desc.RasterizerState = DefaultRasterizerDesc();
-        desc.BlendState = DefaultBlendDesc();
-        desc.DepthStencilState = DefaultDepthStencilDesc();
+        desc.RasterizerState = rast_desc;
+        desc.BlendState = blend_desc;
+        desc.DepthStencilState = depth_stencil_desc;
         desc.SampleMask = UINT_MAX;
         desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         desc.NumRenderTargets = rtv_num;
@@ -256,7 +260,6 @@ namespace D3D
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count)
     {
-
         std::set<std::string> ids;
         DescriptorTableBindPointDesc arr_bind_point_desc[4];
 
@@ -632,7 +635,7 @@ namespace D3D
         return buffer;
     }
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> D3D12Manager::CreateTexture(uint32_t width, uint32_t height)
+    Microsoft::WRL::ComPtr<ID3D12Resource> D3D12Manager::CreateTexture(uint32_t width, uint32_t height, DXGI_FORMAT format, uint16_t array_size)
     {
         D3D12_HEAP_PROPERTIES heap_properties{};
         heap_properties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -646,9 +649,9 @@ namespace D3D
         resource_desc.Alignment = 0;
         resource_desc.Width = width;
         resource_desc.Height = height;
-        resource_desc.DepthOrArraySize = 1;
+        resource_desc.DepthOrArraySize = array_size;
         resource_desc.MipLevels = 1;
-        resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        resource_desc.Format = format;
         resource_desc.SampleDesc.Count = 1;
         resource_desc.SampleDesc.Quality = 0;
         resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;

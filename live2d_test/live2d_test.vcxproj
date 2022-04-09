@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClCompile Include="CopyResourceManager.cpp" />
     <ClCompile Include="CopyTask.cpp" />
+    <ClCompile Include="D3D12BoundResourceManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="D3D12Manager.cpp" />
     <ClCompile Include="D3D12Renderer.cpp" />
     <ClCompile Include="D3DCamera.cpp" />
@@ -40,11 +43,18 @@
     <ClCompile Include="MathHelper.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="PointLight.cpp" />
+    <ClCompile Include="SkyBoxPass.cpp" />
     <ClCompile Include="WICImage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CopyResourceManager.h" />
     <ClInclude Include="CopyTask.h" />
+    <ClInclude Include="D3D12BoundResourceManager.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="D3D12Define.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="D3D12Manager.h" />
     <ClInclude Include="D3D12Renderer.h" />
     <ClInclude Include="D3DCamera.h" />
@@ -65,15 +75,30 @@
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="PointLight.h" />
+    <ClInclude Include="SkyBoxPass.h" />
     <ClInclude Include="WICImage.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\color.hlsl">
+    <FxCompile Include="Shaders\Color.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\Common_VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkyPass_PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkyPass_VS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\light.hlsi" />
+    <None Include="Shaders\CommonDefine.hlsi">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shaders\Light.hlsi">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

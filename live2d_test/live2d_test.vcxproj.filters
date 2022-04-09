@@ -11,9 +11,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Shader">
-      <UniqueIdentifier>{4f27fb36-3516-4d16-bd90-60adfb38bc31}</UniqueIdentifier>
-    </Filter>
     <Filter Include="WIC">
       <UniqueIdentifier>{0e507379-16d5-4e75-91de-437df1a4c09c}</UniqueIdentifier>
     </Filter>
@@ -37,6 +34,12 @@
     </Filter>
     <Filter Include="D3D12Renderer\Input">
       <UniqueIdentifier>{42a4ef52-6ced-465d-b8da-dd88f2232e76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="D3D12Renderer\Pass">
+      <UniqueIdentifier>{0049c2f5-4f8e-4c20-87b2-c1308d60cc1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{4f27fb36-3516-4d16-bd90-60adfb38bc31}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -105,6 +108,12 @@
     </ClCompile>
     <ClCompile Include="ImmediateInput.cpp">
       <Filter>D3D12Renderer\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyBoxPass.cpp">
+      <Filter>D3D12Renderer\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12BoundResourceManager.cpp">
+      <Filter>D3D12Manager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -177,15 +186,36 @@
     <ClInclude Include="InputDefine.h">
       <Filter>D3D12Renderer\Input</Filter>
     </ClInclude>
+    <ClInclude Include="SkyBoxPass.h">
+      <Filter>D3D12Renderer\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12BoundResourceManager.h">
+      <Filter>D3D12Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Define.h">
+      <Filter>D3D12Manager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\color.hlsl">
-      <Filter>Shader</Filter>
+    <FxCompile Include="Shaders\Color.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Common_VS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkyPass_PS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkyPass_VS.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\light.hlsi">
-      <Filter>Shader</Filter>
+    <None Include="Shaders\CommonDefine.hlsi">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\Light.hlsi">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

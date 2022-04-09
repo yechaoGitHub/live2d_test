@@ -296,6 +296,3 @@ bool Camera::IsViewMatrixDirty()
 {
 	return mViewDirty;
 }
-
-
-

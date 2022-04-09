@@ -32,6 +32,16 @@ namespace D3D
         CoUninitialize();
     }
 
+    Microsoft::WRL::ComPtr<IWICBitmap> WICImage::CreateBitmap(uint32_t width, uint32_t height, void* data, REFWICPixelFormatGUID format)
+    {
+        auto& instance = WIC_IMAGE_INSTANCE_;
+
+        Microsoft::WRL::ComPtr<IWICBitmap> bitmap;
+        ThrowIfFailed(instance.wic_factory_->CreateBitmap(width, height, format, WICBitmapCacheOnDemand, &bitmap));
+
+        return bitmap;
+    }
+
     Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> WICImage::LoadImageFormFile(const std::wstring& file_path)
     {
         auto& instance = WIC_IMAGE_INSTANCE_;

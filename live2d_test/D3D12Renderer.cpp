@@ -45,11 +45,9 @@ namespace D3D
     {
         ImGui::GetMainViewport()->PlatformHandleRaw = (void*)window_handle_;
 
-        Key keys[] = {Key_W, Key_A, Key_S, Key_D, Key_Space, Key_LeftCtrl, Key_RightCtrl };
+        Key keys[] = {Key_W, Key_A, Key_S, Key_D, Key_Space, Key_LeftCtrl, Key_RightCtrl, Key_LeftArrow, Key_RightArrow, Key_UpArrow, Key_DownArrow };
         im_input_.RegisterKeyEvent(keys, _countof(keys));
-
         im_input_.RegisterMouseEventHandle(&D3D12Renderer::MouseEventHandle, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-
         im_input_.RegisterKeyEventHandle(&D3D12Renderer::KeyEventHandle, this, std::placeholders::_1, std::placeholders::_2);
 
         command_queue_ = D3D12Manager::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_FLAG_NONE);
@@ -69,6 +67,10 @@ namespace D3D
 
         fence_ = D3D12Manager::CreateFence(fence_value_);
 
+        D3D12_SHADER_BYTECODE shaders[5] = {};
+        vs_shader_ = D3D12Manager::CompileShader(L"./Shaders/Common_VS.hlsl", "VS_Main", "vs_5_0");
+        ps_shader_ = D3D12Manager::CompileShader(L"./Shaders/Color.hlsl", "PS_Main", "ps_5_0");
+
         std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
         input_layout =
         {
@@ -78,17 +80,15 @@ namespace D3D
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         };
 
-        D3D12_SHADER_BYTECODE shaders[5] = {};
-        vs_shader_ = D3D12Manager::CompileShader(L"./Shaders/color.hlsl", "VS", "vs_5_0");
-        ps_shader_ = D3D12Manager::CompileShader(L"./Shaders/color.hlsl", "PS", "ps_5_0");
-
-        ID3DBlob* shader_blob[] = { vs_shader_.Get(), ps_shader_ .Get()};
-        root_signature_ = D3D12Manager::CreateRootSignatureByReflect(shader_blob, 2);
+        ID3DBlob* shader_blob[5] = { vs_shader_.Get(), ps_shader_ .Get()};
+        bound_resource_manager_.Initialize(shader_blob);
+        root_signature_ = bound_resource_manager_.GetRootSignature();
+        auto input_elems = bound_resource_manager_.GetInputElemDescArray();
 
         shaders[0] = { vs_shader_->GetBufferPointer(), (UINT)vs_shader_->GetBufferSize() };
         shaders[1] = { ps_shader_->GetBufferPointer(), (UINT)ps_shader_->GetBufferSize() };
         DXGI_FORMAT rt_format{ DXGI_FORMAT_R8G8B8A8_UNORM };
-        pipe_line_state_ = D3D12Manager::CreatePipeLineStateObject({ input_layout.data(), (UINT)input_layout.size() }, root_signature_.Get(), shaders, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, &rt_format, 1, DXGI_FORMAT_D24_UNORM_S8_UINT);
+        pipe_line_state_ = D3D12Manager::CreatePipeLineStateObject({ input_elems.data(), (UINT)input_elems.size() }, root_signature_, shaders, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, &rt_format, 1, DXGI_FORMAT_D24_UNORM_S8_UINT);
 
         for (int i = 0; i < 2; i++)
         {
@@ -116,7 +116,7 @@ namespace D3D
         scissor_rect_ = { 0, 0, client_width_, client_height_ };
 
         camera_.SetLens(0.25f * XM_PI, AspectRatio(), 1.0f, 1000.0f);
-        camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -100.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
+        camera_.LookAt(XMFLOAT3{ 0.0f, 0.0f, -10.0f }, XMFLOAT3{ 0.0f, 0.0f, 0.0f }, XMFLOAT3{0.0f, 1.0f, 0.0f});
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
@@ -130,6 +130,8 @@ namespace D3D
         InitImageResource();
         InitLight();
         InitResourceBinding();
+
+        skybox_pass_.Initialize();
     }
 
     void D3D12Renderer::ClearUp()
@@ -164,8 +166,8 @@ namespace D3D
 
             XMStoreFloat4x4(&obj_constants.world_mat, world_mat);
             XMStoreFloat4x4(&obj_constants.model_mat, XMMatrixTranspose(model_.GetModelMatrix() * world_mat));
-            XMStoreFloat4x4(&obj_constants.view_mat, view);
-            XMStoreFloat4x4(&obj_constants.proj_mat, proj);
+            XMStoreFloat4x4(&obj_constants.view_mat, XMMatrixTranspose(view));
+            XMStoreFloat4x4(&obj_constants.proj_mat, XMMatrixTranspose(proj));
             XMStoreFloat4x4(&obj_constants.view_proj_mat, XMMatrixTranspose(view_proj));
             XMStoreFloat4x4(&obj_constants.texture_transform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
@@ -174,6 +176,8 @@ namespace D3D
             ::memcpy(map_data, &obj_constants, sizeof(ObjectConstants));
             const_buffer_->Unmap(0, nullptr);
         }
+
+        skybox_pass_.Update(camera_);
     }
 
     void D3D12Renderer::Render()
@@ -204,7 +208,7 @@ namespace D3D
         command_list_->IASetIndexBuffer(&index_buffer_view_);
         command_list_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        command_list_->SetGraphicsRootSignature(root_signature_.Get());
+        command_list_->SetGraphicsRootSignature(root_signature_);
 
         ID3D12DescriptorHeap* heap[] = { srv_heap_.Get(),  };
         command_list_->SetDescriptorHeaps(_countof(heap), heap);
@@ -214,6 +218,8 @@ namespace D3D
 
         command_list_->DrawIndexedInstanced(mesh_data_.Indices16.size(), 1, 0, 0, 0);
 
+        skybox_pass_.PopulateCommandList(command_list_.Get());
+
         if (show_debug_window_)
         {
             DrawDebugWindow(command_list_.Get());
@@ -222,7 +228,6 @@ namespace D3D
         resource_barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
         command_list_->ResourceBarrier(1, &resource_barrier);
-
 
         ThrowIfFailed(command_list_->Close());
 
@@ -364,6 +369,7 @@ namespace D3D
         srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         srv_desc.Texture2D.MostDetailedMip = 0;
         srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
+        srv_desc.Texture2D.PlaneSlice = 0;
         srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
         D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(2));
 
@@ -462,21 +468,25 @@ namespace D3D
                         float dxf = XMConvertToRadians(dx);
                         float dyf = XMConvertToRadians(dy);
 
-                        auto x_axis = camera_.GetRight3f();
-                        auto y_axis = camera_.GetUp3f();
-                        auto qy = XMQuaternionRotationAxis(XMLoadFloat3(&y_axis), dxf);
-                        auto qx = XMQuaternionRotationAxis(XMLoadFloat3(&x_axis), dyf);
+                        camera_.RotateY(XMConvertToRadians(dxf));
+                        camera_.Pitch(XMConvertToRadians(dyf));
 
-                        auto look_at = camera_.GetLook3f();
-                        auto qr = XMQuaternionMultiply(qx, qy);
-                        auto v_look_at = XMQuaternionMultiply(XMLoadFloat3(&look_at), qr);
-                        auto v_up = XMQuaternionMultiply(XMLoadFloat3(&y_axis), qr);
 
-                        XMFLOAT3 lookf3 = {};
-                        XMFLOAT3 upf3 = {};
-                        XMStoreFloat3(&lookf3, v_look_at);
-                        XMStoreFloat3(&upf3, v_up);
-                        camera_.SetOriention(lookf3, upf3);
+                        //auto x_axis = camera_.GetRight();
+                        //auto y_axis = camera_.GetUp();
+                        //auto qy = XMQuaternionRotationAxis(y_axis, dxf);
+                        //auto qx = XMQuaternionRotationAxis(x_axis, dyf);
+
+                        //auto look_at = camera_.GetLook();
+                        //auto qr = XMQuaternionMultiply(qx, qy);
+                        //auto v_look_at = XMQuaternionMultiply(look_at, qr);
+                        //auto v_up = XMQuaternionMultiply(y_axis, qr);
+
+                        //XMFLOAT3 lookf3 = {};
+                        //XMFLOAT3 upf3 = {};
+                        //XMStoreFloat3(&lookf3, v_look_at);
+                        //XMStoreFloat3(&upf3, v_up);
+                        //camera_.SetOriention(lookf3, upf3);
 
                         mouse_cur_x_ = x;
                         mouse_cur_y_ = y;
@@ -539,6 +549,22 @@ namespace D3D
 
                 case Key_Space:
                     camera_.Float(distance);
+                break;
+
+                case Key_LeftArrow:
+                    camera_.RotateY(XMConvertToRadians(-distance));
+                break;
+
+                case Key_RightArrow:
+                    camera_.RotateY(XMConvertToRadians(distance));
+                break;
+
+                case Key_UpArrow:
+                    camera_.Pitch(XMConvertToRadians(-distance));
+                break;
+
+                case Key_DownArrow:
+                    camera_.Pitch(XMConvertToRadians(distance));
                 break;
             }
         }

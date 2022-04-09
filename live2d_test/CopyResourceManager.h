@@ -42,7 +42,7 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12CommandQueue>          copy_command_queue_;
         Microsoft::WRL::ComPtr<ID3D12Fence>                 copy_fence_;
 
-        const uint64_t                                      DEFAULT_UPLOAD_BUFFER_SIZE_ = 1920 * 1080 * 4;
+        const uint64_t                                      DEFAULT_UPLOAD_BUFFER_SIZE_ = 1920 * 1080 * 40;
 
         std::deque<CopyTask*>                               task_queue_;
         std::mutex                                          task_queue_lock_;

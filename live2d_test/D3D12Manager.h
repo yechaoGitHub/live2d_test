@@ -14,6 +14,8 @@
 #include <vector>
 
 #include "CopyResourceManager.h"
+#include "D3D12Define.h"
+
 
 namespace D3D
 {
@@ -60,7 +62,10 @@ namespace D3D
             D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology_type,
             DXGI_FORMAT rtv_formats[8],
             int rtv_num,
-            DXGI_FORMAT dsv_format);
+            DXGI_FORMAT dsv_format,
+            D3D12_RASTERIZER_DESC rast_desc = DefaultRasterizerDesc(),
+            D3D12_BLEND_DESC blend_desc = DefaultBlendDesc(),
+            D3D12_DEPTH_STENCIL_DESC depth_stencil_desc = DefaultDepthStencilDesc());
 
         static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(const D3D12_ROOT_PARAMETER* root_param_arr, int count, const D3D12_STATIC_SAMPLER_DESC* static_sampler = nullptr, uint32_t sampler_count = 0);
 
@@ -78,7 +83,7 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12Resource> CreateBuffer(D3D12_HEAP_TYPE type, uint64_t byte_size);
 
-        static Microsoft::WRL::ComPtr<ID3D12Resource> CreateTexture(uint32_t width, uint32_t height);
+        static Microsoft::WRL::ComPtr<ID3D12Resource> CreateTexture(uint32_t width, uint32_t height, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, uint16_t array_size = 1);
 
         static ResourceLayout GetCopyableFootprints(ID3D12Resource* resource, uint32_t first_resource_index = 0, uint32_t num_resources = 1, uint64_t base_offset = 0);
 
@@ -92,6 +97,16 @@ namespace D3D
 
         static bool WaitCopyTask(uint64_t copy_task_id);
 
+        static D3D12_RASTERIZER_DESC DefaultRasterizerDesc();
+
+        static D3D12_BLEND_DESC DefaultBlendDesc();
+
+        static D3D12_RENDER_TARGET_BLEND_DESC DefaultRenderTargetBlendDesc();
+
+        static D3D12_DEPTH_STENCIL_DESC DefaultDepthStencilDesc();
+
+        static D3D12_DEPTH_STENCILOP_DESC DefaultDepthStencilopDesc();
+
     private:
         struct DescriptorTableBindPointDesc
         {
@@ -103,12 +118,6 @@ namespace D3D
         D3D12Manager();
 
         static std::string GetShaderResourceIdentify(const std::string& raw_name);
-
-        static D3D12_RASTERIZER_DESC DefaultRasterizerDesc();
-        static D3D12_BLEND_DESC DefaultBlendDesc();
-        static D3D12_RENDER_TARGET_BLEND_DESC DefaultRenderTargetBlendDesc();
-        static D3D12_DEPTH_STENCIL_DESC DefaultDepthStencilDesc();
-        static D3D12_DEPTH_STENCILOP_DESC DefaultDepthStencilopDesc();
 
         static D3D12Manager D3D12_MANAGER_INSTANCE_;
 

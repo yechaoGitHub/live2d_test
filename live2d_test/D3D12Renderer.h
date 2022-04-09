@@ -11,8 +11,10 @@
 #include "DirectionalLight.h"
 #include "Model.h"
 #include "GameTimer.h"
+#include "D3D12BoundResourceManager.h"
 
 #include "ImmediateInput.h"
+#include "SkyBoxPass.h"
 
 
 namespace D3D
@@ -64,7 +66,6 @@ namespace D3D
         void MouseEventHandle(MouseAction action, MouseButton btn, int x, int y);
         void KeyEventHandle(KeyAction action, Key key);
 
-
         HWND                                                window_handle_{};
         int                                                 client_width_{};
         int                                                 client_height_{};
@@ -73,9 +74,11 @@ namespace D3D
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator>      command_list_alloc_;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>   command_list_;
         Microsoft::WRL::ComPtr<IDXGISwapChain>              swap_chain_;
-        Microsoft::WRL::ComPtr<ID3D12RootSignature>         root_signature_;
+        ID3D12RootSignature*                                root_signature_ = nullptr;
         Microsoft::WRL::ComPtr<ID3D12PipelineState>         pipe_line_state_;
         Microsoft::WRL::ComPtr<ID3D12Fence>                 fence_;
+
+        D3D12BoundResourceManager                           bound_resource_manager_;
 
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        srv_heap_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        rtv_heap_;
@@ -123,6 +126,8 @@ namespace D3D
         DirectX::XMFLOAT3                                   start_right_ = {};
 
         bool                                                show_debug_window_ = false;
+
+        SkyBoxPass                                          skybox_pass_;
     };
 };
 
