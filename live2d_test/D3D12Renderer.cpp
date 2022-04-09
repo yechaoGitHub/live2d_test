@@ -71,15 +71,6 @@ namespace D3D
         vs_shader_ = D3D12Manager::CompileShader(L"./Shaders/Common_VS.hlsl", "VS_Main", "vs_5_0");
         ps_shader_ = D3D12Manager::CompileShader(L"./Shaders/Color.hlsl", "PS_Main", "ps_5_0");
 
-        std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
-        input_layout =
-        {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        };
-
         ID3DBlob* shader_blob[5] = { vs_shader_.Get(), ps_shader_ .Get()};
         bound_resource_manager_.Initialize(shader_blob);
         root_signature_ = bound_resource_manager_.GetRootSignature();
