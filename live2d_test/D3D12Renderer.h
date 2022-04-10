@@ -80,7 +80,6 @@ namespace D3D
 
         D3D12BoundResourceManager                           bound_resource_manager_;
 
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        srv_heap_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        rtv_heap_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>        dsv_heap_;
 

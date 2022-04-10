@@ -10,12 +10,12 @@ cbuffer LightConstBuffer : register(b1)
 StructuredBuffer<DirectionalLight> DIRECTIONAL_LIGHT_BUFFER : register(t0);
 StructuredBuffer<OrgePointLight> POINT_LIGHT_BUFFER : register(t1);
 
-Texture2D gDiffuseMap : register(t2);
-SamplerState default_sampler[6] : register(s0);
+Texture2D TEXTURE : register(t2);
+SamplerState SAMPLER : register(s0);
 
 float4 PS_Main(VertexOut pin) : SV_Target
 {
-    float3 text_color = gDiffuseMap.Sample(default_sampler[1], pin.TexC);
+    float3 text_color = TEXTURE.Sample(SAMPLER, pin.TexC);
     float3 out_color = float4(0.0, 0.0, 0.0, 1.0);
     for (uint i = 0; i < DIRECTIONAL_LIGHT_NUM; i++)
     {

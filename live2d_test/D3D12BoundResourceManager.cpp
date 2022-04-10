@@ -83,6 +83,16 @@ namespace D3D
         return true;
     }
 
+    ID3D12DescriptorHeap* D3D12BoundResourceManager::GetSrvUavCbvDescriptorHeap()
+    {
+        return srv_uav_cbv_heap_.Get();
+    }
+
+    ID3D12DescriptorHeap* D3D12BoundResourceManager::GetSampleDescriptorHeap()
+    {
+        return sampler_heap_.Get();
+    }
+
     const std::vector<D3D12_INPUT_ELEMENT_DESC>& D3D12BoundResourceManager::GetInputElemDescArray()
     {
         return input_elements_;
@@ -173,7 +183,10 @@ namespace D3D
 
         srv_uav_cbv_heap_ = D3D12Manager::CreateDescriptorHeap(srv_uav_cbv_count, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 
-        sampler_heap_ = D3D12Manager::CreateDescriptorHeap(bound_point_map_[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER].bind_count, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+        if (bound_point_map_[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER].bind_count > 0)
+        {
+            sampler_heap_ = D3D12Manager::CreateDescriptorHeap(bound_point_map_[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER].bind_count, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+        }
     }
 
     void D3D12BoundResourceManager::InitializeRootSignature()

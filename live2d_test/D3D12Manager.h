@@ -69,9 +69,9 @@ namespace D3D
 
         static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature(const D3D12_ROOT_PARAMETER* root_param_arr, int count, const D3D12_STATIC_SAMPLER_DESC* static_sampler = nullptr, uint32_t sampler_count = 0);
 
-        static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetDefaultStaticSamplers(uint32_t base_register = 0);
+        //static std::array<const D3D12_STATIC_SAMPLER_DESC, 6> GetDefaultStaticSamplers(uint32_t base_register = 0);
 
-        static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count);
+        //static Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count);
 
         static Microsoft::WRL::ComPtr<ID3D12Fence> CreateFence(uint64_t value);
 

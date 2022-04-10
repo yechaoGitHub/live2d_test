@@ -258,255 +258,255 @@ namespace D3D
         return root_signature;
     }
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count)
-    {
-        std::set<std::string> ids;
-        DescriptorTableBindPointDesc arr_bind_point_desc[4];
+    //Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12Manager::CreateRootSignatureByReflect(ID3DBlob** shader_arr, uint32_t shader_count)
+    //{
+    //    std::set<std::string> ids;
+    //    DescriptorTableBindPointDesc arr_bind_point_desc[4];
 
-        for (uint32_t i = 0; i < shader_count; i++)
-        {
-            ComPtr<ID3D12ShaderReflection> shader_reflect;
-            ThrowIfFailed(D3DReflect(shader_arr[i]->GetBufferPointer(), shader_arr[i]->GetBufferSize(), IID_PPV_ARGS(&shader_reflect)));
+    //    for (uint32_t i = 0; i < shader_count; i++)
+    //    {
+    //        ComPtr<ID3D12ShaderReflection> shader_reflect;
+    //        ThrowIfFailed(D3DReflect(shader_arr[i]->GetBufferPointer(), shader_arr[i]->GetBufferSize(), IID_PPV_ARGS(&shader_reflect)));
 
-            D3D12_SHADER_DESC shader_desc{};
-            ThrowIfFailed(shader_reflect->GetDesc(&shader_desc));
+    //        D3D12_SHADER_DESC shader_desc{};
+    //        ThrowIfFailed(shader_reflect->GetDesc(&shader_desc));
 
-            for (uint32_t b = 0; b < shader_desc.BoundResources; b++)
-            {
-                D3D12_SHADER_INPUT_BIND_DESC bound_desc{};
-                ThrowIfFailed(shader_reflect->GetResourceBindingDesc(b, &bound_desc));
+    //        for (uint32_t b = 0; b < shader_desc.BoundResources; b++)
+    //        {
+    //            D3D12_SHADER_INPUT_BIND_DESC bound_desc{};
+    //            ThrowIfFailed(shader_reflect->GetResourceBindingDesc(b, &bound_desc));
 
-                auto id = GetShaderResourceIdentify(bound_desc.Name);
-                if (id.empty() || ids.find(bound_desc.Name) != ids.end())
-                {
-                    continue;
-                }
+    //            auto id = GetShaderResourceIdentify(bound_desc.Name);
+    //            if (id.empty() || ids.find(bound_desc.Name) != ids.end())
+    //            {
+    //                continue;
+    //            }
 
-                ids.insert(id);
+    //            ids.insert(id);
 
-                DescriptorTableBindPointDesc* ptr_bind_point_desc{};
+    //            DescriptorTableBindPointDesc* ptr_bind_point_desc{};
 
-                switch (bound_desc.Type)
-                {
-                    case D3D_SIT_CBUFFER:
-                        ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_CBV];
-                    break;
+    //            switch (bound_desc.Type)
+    //            {
+    //                case D3D_SIT_CBUFFER:
+    //                    ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_CBV];
+    //                break;
 
-                    case D3D_SIT_TBUFFER:
-                    break;
+    //                case D3D_SIT_TBUFFER:
+    //                break;
 
-                    case D3D_SIT_TEXTURE:
-                    case D3D_SIT_STRUCTURED:
-                        ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_SRV];
-                    break;
+    //                case D3D_SIT_TEXTURE:
+    //                case D3D_SIT_STRUCTURED:
+    //                    ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_SRV];
+    //                break;
 
-                    case D3D_SIT_SAMPLER:
-                        ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
-                    break;
+    //                case D3D_SIT_SAMPLER:
+    //                    ptr_bind_point_desc = &arr_bind_point_desc[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
+    //                break;
 
-                    case D3D_SIT_UAV_RWTYPED:
-                    break;
+    //                case D3D_SIT_UAV_RWTYPED:
+    //                break;
 
-                    case D3D_SIT_UAV_RWSTRUCTURED:
-                    break;
+    //                case D3D_SIT_UAV_RWSTRUCTURED:
+    //                break;
 
-                    case D3D_SIT_BYTEADDRESS:
-                    break;
+    //                case D3D_SIT_BYTEADDRESS:
+    //                break;
 
-                    case D3D_SIT_UAV_RWBYTEADDRESS:
-                    break;
+    //                case D3D_SIT_UAV_RWBYTEADDRESS:
+    //                break;
 
-                    case D3D_SIT_UAV_APPEND_STRUCTURED:
-                    break;
+    //                case D3D_SIT_UAV_APPEND_STRUCTURED:
+    //                break;
 
-                    case D3D_SIT_UAV_CONSUME_STRUCTURED:
-                    break;
+    //                case D3D_SIT_UAV_CONSUME_STRUCTURED:
+    //                break;
 
-                    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-                    break;
+    //                case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+    //                break;
 
-                    case D3D_SIT_RTACCELERATIONSTRUCTURE:
-                    break;
+    //                case D3D_SIT_RTACCELERATIONSTRUCTURE:
+    //                break;
 
-                    case D3D_SIT_UAV_FEEDBACKTEXTURE:
-                    break;
+    //                case D3D_SIT_UAV_FEEDBACKTEXTURE:
+    //                break;
 
-                    default:
-                        ThrowIfFalse(0);
-                    break;
-                }
+    //                default:
+    //                    ThrowIfFalse(0);
+    //                break;
+    //            }
 
-                if (ptr_bind_point_desc)
-                {
-                    auto& bind_point = bound_desc.BindPoint;
-                    ptr_bind_point_desc->max_bind_point = (std::max)(ptr_bind_point_desc->max_bind_point, bind_point);
-                    ptr_bind_point_desc->min_bind_point = (std::min)(ptr_bind_point_desc->min_bind_point, bind_point);
-                    ptr_bind_point_desc->count++;
-                }
-            }
-        }
+    //            if (ptr_bind_point_desc)
+    //            {
+    //                auto& bind_point = bound_desc.BindPoint;
+    //                ptr_bind_point_desc->max_bind_point = (std::max)(ptr_bind_point_desc->max_bind_point, bind_point);
+    //                ptr_bind_point_desc->min_bind_point = (std::min)(ptr_bind_point_desc->min_bind_point, bind_point);
+    //                ptr_bind_point_desc->count++;
+    //            }
+    //        }
+    //    }
 
-        std::vector<D3D12_DESCRIPTOR_RANGE> vec_descriptor_range;
-        D3D12_DESCRIPTOR_RANGE sampler_range{};
-        for (uint32_t i = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; i <= D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER; i++)
-        {
-            auto& bind_point_desc = arr_bind_point_desc[i];
-            if (bind_point_desc.count == 0)
-            {
-                continue;
-            }
+    //    std::vector<D3D12_DESCRIPTOR_RANGE> vec_descriptor_range;
+    //    D3D12_DESCRIPTOR_RANGE sampler_range{};
+    //    for (uint32_t i = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; i <= D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER; i++)
+    //    {
+    //        auto& bind_point_desc = arr_bind_point_desc[i];
+    //        if (bind_point_desc.count == 0)
+    //        {
+    //            continue;
+    //        }
 
-            if (i == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
-            {
-                sampler_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-                sampler_range.NumDescriptors = bind_point_desc.max_bind_point - bind_point_desc.min_bind_point + 1;
-                sampler_range.BaseShaderRegister = bind_point_desc.min_bind_point;
-                sampler_range.RegisterSpace = 0;
-                sampler_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            }
-            else
-            {
-                D3D12_DESCRIPTOR_RANGE descriptor_range{};
-                descriptor_range.RangeType = static_cast<D3D12_DESCRIPTOR_RANGE_TYPE>(i);
-                descriptor_range.NumDescriptors = bind_point_desc.max_bind_point - bind_point_desc.min_bind_point + 1;
-                descriptor_range.BaseShaderRegister = bind_point_desc.min_bind_point;
-                descriptor_range.RegisterSpace = 0;
-                descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+    //        if (i == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
+    //        {
+    //            sampler_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+    //            sampler_range.NumDescriptors = bind_point_desc.max_bind_point - bind_point_desc.min_bind_point + 1;
+    //            sampler_range.BaseShaderRegister = bind_point_desc.min_bind_point;
+    //            sampler_range.RegisterSpace = 0;
+    //            sampler_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+    //        }
+    //        else
+    //        {
+    //            D3D12_DESCRIPTOR_RANGE descriptor_range{};
+    //            descriptor_range.RangeType = static_cast<D3D12_DESCRIPTOR_RANGE_TYPE>(i);
+    //            descriptor_range.NumDescriptors = bind_point_desc.max_bind_point - bind_point_desc.min_bind_point + 1;
+    //            descriptor_range.BaseShaderRegister = bind_point_desc.min_bind_point;
+    //            descriptor_range.RegisterSpace = 0;
+    //            descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-                vec_descriptor_range.push_back(descriptor_range);
-            }
-        }
+    //            vec_descriptor_range.push_back(descriptor_range);
+    //        }
+    //    }
 
-        D3D12_ROOT_PARAMETER root_param[2] = {};
-        uint32_t root_param_count{};
-        root_param[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        root_param[0].DescriptorTable.NumDescriptorRanges = vec_descriptor_range.size();
-        root_param[0].DescriptorTable.pDescriptorRanges = vec_descriptor_range.data();
-        root_param[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        root_param_count++;
-        //if (sampler_range.NumDescriptors > 0)
-        //{
-        //    root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        //    root_param[1].DescriptorTable.NumDescriptorRanges = 1;
-        //    root_param[1].DescriptorTable.pDescriptorRanges = &sampler_range;
-        //    root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-        //    root_param_count++;
-        //}
+    //    D3D12_ROOT_PARAMETER root_param[2] = {};
+    //    uint32_t root_param_count{};
+    //    root_param[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    //    root_param[0].DescriptorTable.NumDescriptorRanges = vec_descriptor_range.size();
+    //    root_param[0].DescriptorTable.pDescriptorRanges = vec_descriptor_range.data();
+    //    root_param[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    //    root_param_count++;
+    //    //if (sampler_range.NumDescriptors > 0)
+    //    //{
+    //    //    root_param[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    //    //    root_param[1].DescriptorTable.NumDescriptorRanges = 1;
+    //    //    root_param[1].DescriptorTable.pDescriptorRanges = &sampler_range;
+    //    //    root_param[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    //    //    root_param_count++;
+    //    //}
 
-        auto static_samplers = GetDefaultStaticSamplers();
+    //    auto static_samplers = GetDefaultStaticSamplers();
 
-        return CreateRootSignature(root_param, root_param_count, static_samplers.data(), static_samplers.size());
-    }
+    //    return CreateRootSignature(root_param, root_param_count, static_samplers.data(), static_samplers.size());
+    //}
 
-    std::array<const D3D12_STATIC_SAMPLER_DESC, 6> D3D12Manager::GetDefaultStaticSamplers(uint32_t base_register)
-    {
-        const D3D12_STATIC_SAMPLER_DESC point_wrap =
-        {
-            D3D12_FILTER_MIN_MAG_MIP_POINT,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            0.0f,
-            16,
-            D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-            0.0f,
-            D3D12_FLOAT32_MAX,
-            0 + base_register,
-            0,
-            D3D12_SHADER_VISIBILITY_ALL
-        };
+    //std::array<const D3D12_STATIC_SAMPLER_DESC, 6> D3D12Manager::GetDefaultStaticSamplers(uint32_t base_register)
+    //{
+    //    const D3D12_STATIC_SAMPLER_DESC point_wrap =
+    //    {
+    //        D3D12_FILTER_MIN_MAG_MIP_POINT,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        0.0f,
+    //        16,
+    //        D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //        D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    //        0.0f,
+    //        D3D12_FLOAT32_MAX,
+    //        0 + base_register,
+    //        0,
+    //        D3D12_SHADER_VISIBILITY_ALL
+    //    };
 
-        const D3D12_STATIC_SAMPLER_DESC point_clamp =
-        {
-            D3D12_FILTER_MIN_MAG_MIP_POINT,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            0.0f,
-            16,
-            D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-            0.0f,
-            D3D12_FLOAT32_MAX,
-            1 + base_register,
-            0,
-            D3D12_SHADER_VISIBILITY_ALL
-        };
+    //    const D3D12_STATIC_SAMPLER_DESC point_clamp =
+    //    {
+    //        D3D12_FILTER_MIN_MAG_MIP_POINT,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        0.0f,
+    //        16,
+    //        D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //        D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    //        0.0f,
+    //        D3D12_FLOAT32_MAX,
+    //        1 + base_register,
+    //        0,
+    //        D3D12_SHADER_VISIBILITY_ALL
+    //    };
 
-        const D3D12_STATIC_SAMPLER_DESC linear_wrap =
-        {
-            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            0.0f,
-            16,
-            D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-            0.0f,
-            D3D12_FLOAT32_MAX,
-            2 + base_register,
-            0,
-            D3D12_SHADER_VISIBILITY_ALL
-        };
+    //    const D3D12_STATIC_SAMPLER_DESC linear_wrap =
+    //    {
+    //        D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        0.0f,
+    //        16,
+    //        D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //        D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    //        0.0f,
+    //        D3D12_FLOAT32_MAX,
+    //        2 + base_register,
+    //        0,
+    //        D3D12_SHADER_VISIBILITY_ALL
+    //    };
 
-        const D3D12_STATIC_SAMPLER_DESC linear_clamp =
-        {
-            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            0.0f,
-            16,
-            D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-            0.0f,
-            D3D12_FLOAT32_MAX,
-            3 + base_register,
-            0,
-            D3D12_SHADER_VISIBILITY_ALL
-        };
+    //    const D3D12_STATIC_SAMPLER_DESC linear_clamp =
+    //    {
+    //        D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        0.0f,
+    //        16,
+    //        D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //        D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    //        0.0f,
+    //        D3D12_FLOAT32_MAX,
+    //        3 + base_register,
+    //        0,
+    //        D3D12_SHADER_VISIBILITY_ALL
+    //    };
 
-        const D3D12_STATIC_SAMPLER_DESC anisotropic_wrap =
-        {
-            D3D12_FILTER_ANISOTROPIC,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            0.0f,
-            8,
-            D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-            0.0f,
-            D3D12_FLOAT32_MAX,
-            4 + base_register,
-            0,
-            D3D12_SHADER_VISIBILITY_ALL
-        };
+    //    const D3D12_STATIC_SAMPLER_DESC anisotropic_wrap =
+    //    {
+    //        D3D12_FILTER_ANISOTROPIC,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    //        0.0f,
+    //        8,
+    //        D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //        D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    //        0.0f,
+    //        D3D12_FLOAT32_MAX,
+    //        4 + base_register,
+    //        0,
+    //        D3D12_SHADER_VISIBILITY_ALL
+    //    };
 
-        const D3D12_STATIC_SAMPLER_DESC anisotropic_clamp =
-        {
-            D3D12_FILTER_ANISOTROPIC,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-            0.0f,
-            8,
-            D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-            0.0f,
-            D3D12_FLOAT32_MAX,
-            5 + base_register,
-            0,
-            D3D12_SHADER_VISIBILITY_ALL
-        };
+    //    const D3D12_STATIC_SAMPLER_DESC anisotropic_clamp =
+    //    {
+    //        D3D12_FILTER_ANISOTROPIC,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+    //        0.0f,
+    //        8,
+    //        D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //        D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    //        0.0f,
+    //        D3D12_FLOAT32_MAX,
+    //        5 + base_register,
+    //        0,
+    //        D3D12_SHADER_VISIBILITY_ALL
+    //    };
 
-        return {
-            point_wrap, point_clamp,
-            linear_wrap, linear_clamp,
-            anisotropic_wrap, anisotropic_clamp };
-    }
+    //    return {
+    //        point_wrap, point_clamp,
+    //        linear_wrap, linear_clamp,
+    //        anisotropic_wrap, anisotropic_clamp };
+    //}
 
 
     Microsoft::WRL::ComPtr<ID3D12Fence> D3D12Manager::CreateFence(uint64_t value)

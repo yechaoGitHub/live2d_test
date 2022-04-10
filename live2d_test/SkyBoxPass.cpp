@@ -35,12 +35,17 @@ namespace D3D
 
     void SkyBoxPass::PopulateCommandList(ID3D12GraphicsCommandList* cmd)
     {
-        ID3D12DescriptorHeap* heap[] = { srv_heap_.Get() };
+        ID3D12DescriptorHeap* heap[] =
+        {
+            bund_resource_manager_.GetSrvUavCbvDescriptorHeap(),
+            bund_resource_manager_.GetSampleDescriptorHeap()
+        };
 
         cmd->SetPipelineState(pso_.Get());
-        cmd->SetGraphicsRootSignature(root_signature_.Get());
-        cmd->SetDescriptorHeaps(1, heap);
-        cmd->SetGraphicsRootDescriptorTable(0, srv_heap_->GetGPUDescriptorHandleForHeapStart());
+        cmd->SetGraphicsRootSignature(root_signature_);
+        cmd->SetDescriptorHeaps(_countof(heap), heap);
+        cmd->SetGraphicsRootDescriptorTable(0, bund_resource_manager_.GetSrvUavCbvDescriptorHeap()->GetGPUDescriptorHandleForHeapStart());
+        cmd->SetGraphicsRootDescriptorTable(1, bund_resource_manager_.GetSampleDescriptorHeap()->GetGPUDescriptorHandleForHeapStart());
         cmd->IASetVertexBuffers(0, 1, &vert_buffer_view_);
         cmd->IASetIndexBuffer(&index_buffer_view_);
         cmd->DrawIndexedInstanced(mesh_data_.Indices16.size(), 1, 0, 0, 0);
@@ -51,35 +56,26 @@ namespace D3D
         vs_shader_ = D3D12Manager::CompileShader(L"./Shaders/SkyPass_VS.hlsl", "VS_Main", "vs_5_0");
         ps_shader_ = D3D12Manager::CompileShader(L"./Shaders/SkyPass_PS.hlsl", "PS_Main", "ps_5_0");
 
-        ID3DBlob* shader_arr[] = { vs_shader_.Get(), ps_shader_.Get() };
-        root_signature_ = D3D12Manager::CreateRootSignatureByReflect(shader_arr, _countof(shader_arr));
+        ID3DBlob* shader_arr[5] = { vs_shader_.Get(), ps_shader_.Get() };
+        bund_resource_manager_.Initialize(shader_arr);
 
-        std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout;
-        input_layout =
-        {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        };
+        root_signature_ = bund_resource_manager_.GetRootSignature();
+
+        auto& input_layout = bund_resource_manager_.GetInputElemDescArray();
 
         D3D12_SHADER_BYTECODE shader_byte[5] = {};
         shader_byte[0] = { vs_shader_->GetBufferPointer(), (UINT)vs_shader_->GetBufferSize() };
         shader_byte[1] = { ps_shader_->GetBufferPointer(), (UINT)ps_shader_->GetBufferSize() };
-
-        DXGI_FORMAT rt_format{ DXGI_FORMAT_R8G8B8A8_UNORM };
 
         D3D12_RASTERIZER_DESC rast_desc = D3D12Manager::DefaultRasterizerDesc();
         D3D12_BLEND_DESC blend_desc = D3D12Manager::DefaultBlendDesc();
         D3D12_DEPTH_STENCIL_DESC depth_stencil_desc = D3D12Manager::DefaultDepthStencilDesc();
 
         rast_desc.CullMode = D3D12_CULL_MODE_FRONT;
-        rast_desc.FillMode = D3D12_FILL_MODE_WIREFRAME;
         depth_stencil_desc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-        pso_ = D3D12Manager::CreatePipeLineStateObject({ input_layout.data(), (UINT)input_layout.size() }, root_signature_.Get(), shader_byte, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, &rt_format, 1, DXGI_FORMAT_D24_UNORM_S8_UINT, rast_desc, blend_desc, depth_stencil_desc);
-
-        srv_heap_ = D3D12Manager::CreateDescriptorHeap(5, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+        DXGI_FORMAT rt_format{ DXGI_FORMAT_R8G8B8A8_UNORM };
+        pso_ = D3D12Manager::CreatePipeLineStateObject({ input_layout.data(), (UINT)input_layout.size() }, root_signature_, shader_byte, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, &rt_format, 1, DXGI_FORMAT_D24_UNORM_S8_UINT, rast_desc, blend_desc, depth_stencil_desc);
 
         uint64_t vertexSize = mesh_data_.Vertices.size() * sizeof(GeometryGenerator::Vertex);
         uint64_t indexSize = mesh_data_.Indices16.size() * sizeof(uint16_t);
@@ -138,8 +134,6 @@ namespace D3D
             D3D12Manager::WaitCopyTask(task_id);
         }
 
-        DirectX::DescriptorHeap dx_cbv_heap(srv_heap_.Get());
-
         D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
         srv_desc.Format = sky_texture_->GetDesc().Format;;
         srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
@@ -147,13 +141,17 @@ namespace D3D
         srv_desc.TextureCube.MostDetailedMip = 0;
         srv_desc.TextureCube.MipLevels = sky_texture_->GetDesc().MipLevels;
         srv_desc.TextureCube.ResourceMinLODClamp = 0.0f;
-        D3D12Manager::GetDevice()->CreateShaderResourceView(sky_texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(0));
+        D3D12Manager::GetDevice()->CreateShaderResourceView(sky_texture_.Get(), &srv_desc, bund_resource_manager_.GetDescriptorHandle("CUBE_TEXTURE", 0));
+        //D3D12Manager::GetDevice()->CreateShaderResourceView(sky_texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(0));
 
         view_proj_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof(DirectX::XMFLOAT4X4)));
         D3D12_CONSTANT_BUFFER_VIEW_DESC const_buff_view{};
         const_buff_view.BufferLocation = view_proj_buffer_->GetGPUVirtualAddress();
         const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof(DirectX::XMFLOAT4X4));
-        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(1));
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, bund_resource_manager_.GetDescriptorHandle("VS_MatrixBuffer", 0));
+        //D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(1));
+
+        bund_resource_manager_.BindDefaultSampler("SAMPLER", 0, D3D12BoundResourceManager::kLinearWrap);
 
     }
 };

@@ -20,6 +20,9 @@ namespace D3D
         D3D12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandle(const std::string &res_name, uint32_t index);
         bool BindDefaultSampler(const std::string& sampler_name, uint32_t index, DefaultSamplerType default_sampler);
 
+        ID3D12DescriptorHeap* GetSrvUavCbvDescriptorHeap();
+        ID3D12DescriptorHeap* GetSampleDescriptorHeap();
+
         const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetInputElemDescArray();
         ID3D12RootSignature* GetRootSignature();
 

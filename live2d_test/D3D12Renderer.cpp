@@ -111,8 +111,6 @@ namespace D3D
 
         const_buffer_ = D3D12Manager::CreateBuffer(D3D12_HEAP_TYPE_UPLOAD, CalcConstantBufferByteSize(sizeof ObjectConstants));
 
-        srv_heap_ = D3D12Manager::CreateDescriptorHeap(10, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
         model_.SetOriention({ 0.5f, 0.5f, 0.0f });
 
         timer_.Start();
@@ -201,9 +199,14 @@ namespace D3D
 
         command_list_->SetGraphicsRootSignature(root_signature_);
 
-        ID3D12DescriptorHeap* heap[] = { srv_heap_.Get(),  };
+        ID3D12DescriptorHeap* heap[] =
+        {
+            bound_resource_manager_.GetSrvUavCbvDescriptorHeap(),
+            bound_resource_manager_.GetSampleDescriptorHeap()
+        };
         command_list_->SetDescriptorHeaps(_countof(heap), heap);
-        command_list_->SetGraphicsRootDescriptorTable(0, srv_heap_->GetGPUDescriptorHandleForHeapStart());
+        command_list_->SetGraphicsRootDescriptorTable(0, bound_resource_manager_.GetSrvUavCbvDescriptorHeap()->GetGPUDescriptorHandleForHeapStart());
+        command_list_->SetGraphicsRootDescriptorTable(1, bound_resource_manager_.GetSampleDescriptorHeap()->GetGPUDescriptorHandleForHeapStart());
 
         command_list_->OMSetRenderTargets(1, &cur_back_buffer_view, true, &cur_depth_stencil_view);
 
@@ -342,8 +345,6 @@ namespace D3D
 
     void D3D12Renderer::InitResourceBinding()
     {
-        DescriptorHeap dx_cbv_heap(srv_heap_.Get());
-
         D3D12_SHADER_RESOURCE_VIEW_DESC dir_light_desc{};
         dir_light_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         dir_light_desc.Format = DXGI_FORMAT_UNKNOWN;
@@ -352,7 +353,8 @@ namespace D3D
         dir_light_desc.Buffer.NumElements = 1;
         dir_light_desc.Buffer.StructureByteStride = sizeof(DirectionalLight);
         dir_light_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-        D3D12Manager::GetDevice()->CreateShaderResourceView(directional_light_gpu_buffer_.Get(), &dir_light_desc, dx_cbv_heap.GetCpuHandle(0));
+        D3D12Manager::GetDevice()->CreateShaderResourceView(directional_light_gpu_buffer_.Get(), &dir_light_desc, bound_resource_manager_.GetDescriptorHandle("DIRECTIONAL_LIGHT_BUFFER", 0));
+        //D3D12Manager::GetDevice()->CreateShaderResourceView(directional_light_gpu_buffer_.Get(), &dir_light_desc, dx_cbv_heap.GetCpuHandle(0));
 
         D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
         srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -362,16 +364,22 @@ namespace D3D
         srv_desc.Texture2D.MipLevels = texture_->GetDesc().MipLevels;
         srv_desc.Texture2D.PlaneSlice = 0;
         srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
-        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(2));
+        D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, bound_resource_manager_.GetDescriptorHandle("TEXTURE", 0));
+        //D3D12Manager::GetDevice()->CreateShaderResourceView(texture_.Get(), &srv_desc, dx_cbv_heap.GetCpuHandle(2));
 
         D3D12_CONSTANT_BUFFER_VIEW_DESC const_buff_view{};
         const_buff_view.BufferLocation = const_buffer_->GetGPUVirtualAddress();
         const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof ObjectConstants);
-        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(3));
+
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, bound_resource_manager_.GetDescriptorHandle("VS_MatrixBuffer", 0));
+        //D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(3));
 
         const_buff_view.BufferLocation = const_light_gpu_buffer_->GetGPUVirtualAddress();
         const_buff_view.SizeInBytes = CalcConstantBufferByteSize(sizeof LightConstBuffer);
-        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(4));
+        D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, bound_resource_manager_.GetDescriptorHandle("LightConstBuffer", 0));
+        //D3D12Manager::GetDevice()->CreateConstantBufferView(&const_buff_view, dx_cbv_heap.GetCpuHandle(4));
+
+        bound_resource_manager_.BindDefaultSampler("SAMPLER", 0, D3D12BoundResourceManager::kLinearWrap);
     }
 
     void D3D12Renderer::DrawDebugWindow(ID3D12GraphicsCommandList *cmd)

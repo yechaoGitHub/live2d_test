@@ -1,7 +1,7 @@
 #include "SkyPass_VS.hlsl"
 
-TextureCube cube_texture : register(t0);
-SamplerState default_sampler[6] : register(s0);
+TextureCube CUBE_TEXTURE : register(t0);
+SamplerState SAMPLER : register(s0);
 
 //const static float2 invAtan = float2(0.1591, 0.3183);
 //float2 SampleSphericalMap(float3 v)
@@ -15,6 +15,7 @@ SamplerState default_sampler[6] : register(s0);
 
 float4 PS_Main(SkyPassVertexOut pin) : SV_Target
 {
-    float3 color = cube_texture.Sample(default_sampler[2], normalize(pin.position));
+    float3 color = CUBE_TEXTURE.Sample(SAMPLER, normalize(pin.position));
     return float4(color, 1.0f);
 }
+
